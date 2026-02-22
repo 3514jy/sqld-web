@@ -1,6 +1,7 @@
 # 📚 SQLD 웹툰 학습 사이트
 
-> 2024 개정판 SQLD 자격증 완벽 대비 웹툰 학습 사이트
+> SQLD 자격증 대비 웹툰 학습 사이트
+> 참고 사이트 https://m.blog.naver.com/ekf1121_/223481107906
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub stars](https://img.shields.io/github/stars/yourusername/sqld-webtoon)](https://github.com/yourusername/sqld-webtoon/stargazers)
