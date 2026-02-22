@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQLD Chapter 10: WHERE & 연산자</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding-top: 60px; padding-bottom: 20px; }
+        .fixed-nav { position: fixed; top: 0; left: 0; right: 0; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000; padding: 10px 15px; }
+        .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+        .nav-title { font-size: 1.1em; font-weight: bold; color: #667eea; }
+        .nav-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .nav-btn { padding: 6px 12px; background: #f8f9fa; border: 2px solid #667eea; border-radius: 20px; cursor: pointer; font-size: 0.85em; font-weight: bold; color: #667eea; transition: all 0.3s; }
+        .nav-btn:hover, .nav-btn.active { background: #667eea; color: white; }
+        .scroll-to-top { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 5px 20px rgba(0,0,0,0.3); z-index: 999; opacity: 0; transition: opacity 0.3s; font-size: 2em; color: white; }
+        .scroll-to-top.show { opacity: 1; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 10px 20px; }
+        .header { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; }
+        .header h1 { color: #667eea; font-size: 2em; margin-bottom: 10px; }
+        .chapter-badge { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px 30px; border-radius: 20px; display: inline-block; font-weight: bold; margin-bottom: 15px; }
+        .progress-section { background: white; border-radius: 20px; padding: 25px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .progress-bar { height: 35px; background: #e0e0e0; border-radius: 20px; overflow: hidden; margin: 20px 0; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); transition: width 0.5s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.1em; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-top: 20px; }
+        .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 15px; text-align: center; }
+        .stat-number { font-size: 2.2em; font-weight: bold; margin: 10px 0; }
+        .tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; background: white; padding: 15px; border-radius: 15px; margin-bottom: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .tab { padding: 15px 20px; background: #f8f9fa; border: none; border-radius: 10px; cursor: pointer; font-size: 1em; font-weight: bold; transition: all 0.3s; color: #666; text-align: center; }
+        .tab:hover { background: #e9ecef; }
+        .tab.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .webtoon-panel { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .webtoon-title { font-size: 2em; color: #667eea; margin-bottom: 30px; text-align: center; font-weight: bold; }
+        .comic-panel { background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%); border: 4px solid #667eea; border-radius: 20px; padding: 25px; margin-bottom: 25px; }
+        .character-avatar { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 3.5em; box-shadow: 0 5px 15px rgba(0,0,0,0.2); margin: 0 auto 20px; }
+        .avatar-student { background: linear-gradient(135deg, #ffd89b 0%, #ff9a9e 100%); }
+        .avatar-teacher { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+        .character-text { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .character-name { font-weight: bold; color: #667eea; margin-bottom: 10px; font-size: 1.1em; }
+        .character-speech { font-size: 1.1em; line-height: 1.8; color: #333; }
+        .code-box { background: #2d2d2d; color: #f8f8f2; padding: 20px; border-radius: 10px; font-family: 'Courier New', monospace; margin: 15px 0; overflow-x: auto; font-size: 0.95em; }
+        .memory-box { background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%); border: 5px solid #ffc107; border-radius: 20px; padding: 30px; margin: 30px 0; box-shadow: 0 10px 25px rgba(255, 193, 7, 0.3); }
+        .memory-box h3 { color: #856404; font-size: 1.8em; margin-bottom: 20px; text-align: center; }
+        .memory-keyword { font-size: 3em; font-weight: bold; color: #ff6b6b; text-align: center; margin: 20px 0; text-shadow: 3px 3px 6px rgba(0,0,0,0.1); letter-spacing: 5px; }
+        .memory-story { font-size: 1.4em; text-align: center; color: #495057; font-weight: bold; margin: 20px 0; }
+        .highlight { background: linear-gradient(transparent 60%, #ffd89b 60%); font-weight: bold; padding: 2px 6px; }
+        .exam-point { background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%); color: white; padding: 25px; border-radius: 15px; margin: 25px 0; box-shadow: 0 10px 25px rgba(255, 107, 107, 0.3); }
+        .exam-point h3 { font-size: 1.6em; margin-bottom: 15px; }
+        .exam-point ul { margin-left: 25px; line-height: 2; }
+        .exam-point li { margin: 10px 0; font-size: 1.1em; }
+        .quiz-container, .problem-bank { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .question-card { background: #f8f9fa; border-radius: 20px; padding: 25px; margin-bottom: 25px; }
+        .question-number { color: #667eea; font-weight: bold; font-size: 1.2em; margin-bottom: 15px; }
+        .question-text { font-size: 1.25em; color: #333; margin-bottom: 20px; line-height: 1.8; }
+        .options { display: grid; gap: 12px; }
+        .option { background: white; border: 3px solid #e0e0e0; border-radius: 15px; padding: 15px 20px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 15px; font-size: 1.05em; }
+        .option:hover { border-color: #667eea; transform: translateX(5px); }
+        .option-label { width: 35px; height: 35px; border-radius: 50%; background: #667eea; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
+        .option.correct { border-color: #28a745; background: #d4edda; }
+        .option.correct .option-label { background: #28a745; }
+        .option.incorrect { border-color: #dc3545; background: #f8d7da; }
+        .option.incorrect .option-label { background: #dc3545; }
+        .option.disabled { cursor: not-allowed; opacity: 0.7; }
+        .explanation { background: #e7f3ff; border-left: 6px solid #2196F3; padding: 20px; margin-top: 20px; border-radius: 10px; display: none; line-height: 1.8; }
+        .explanation.show { display: block; }
+        .explanation h4 { color: #1976D2; margin-bottom: 15px; font-size: 1.3em; }
+        .flashcard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-top: 30px; }
+        .flashcard { height: 280px; perspective: 1000px; cursor: pointer; }
+        .flashcard-inner { position: relative; width: 100%; height: 100%; transition: transform 0.8s; transform-style: preserve-3d; }
+        .flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
+        .flashcard-front, .flashcard-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 20px; padding: 30px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .flashcard-front { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .flashcard-front h3 { font-size: 1.8em; margin-bottom: 15px; }
+        .flashcard-back { background: white; transform: rotateY(180deg); }
+        .flashcard-back h3 { color: #667eea; margin-bottom: 15px; font-size: 1.4em; }
+        .difficulty-badge { display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 0.9em; font-weight: bold; }
+        .difficulty-easy { background: #d4edda; color: #155724; }
+        .difficulty-medium { background: #fff3cd; color: #856404; }
+        .difficulty-hard { background: #f8d7da; color: #721c24; }
+        .complete-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 40px; border-radius: 25px; font-size: 1.2em; cursor: pointer; margin-top: 20px; width: 100%; font-weight: bold; }
+        @media (max-width: 768px) { body { padding-top: 100px; } .memory-keyword { font-size: 2em; letter-spacing: 3px; } .flashcard-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="fixed-nav">
+        <div class="nav-container">
+            <div class="nav-title">📚 Chapter 10: WHERE & 연산자</div>
+            <div class="nav-buttons">
+                <button class="nav-btn" onclick="scrollToSection('webtoon')">🎬 웹툰</button>
+                <button class="nav-btn" onclick="scrollToSection('quiz')">🎯 퀴즈</button>
+                <button class="nav-btn" onclick="scrollToSection('flashcard')">🃏 암기카드</button>
+                <button class="nav-btn" onclick="scrollToSection('problems')">📝 문제</button>
+            </div>
+        </div>
+    </div>
+    <div class="scroll-to-top" id="scrollTopBtn" onclick="scrollToTop()">↑</div>
+    <div class="container">
+        <div class="header">
+            <div class="chapter-badge">📚 Chapter 10</div>
+            <h1>WHERE & 연산자</h1>
+            <p style="color: #666; margin-top: 10px; font-size: 1.1em;">조건 검색의 핵심!</p>
+        </div>
+        <div class="progress-section">
+            <h2 style="color: #667eea; margin-bottom: 15px;">📊 학습 진행도</h2>
+            <div class="progress-bar"><div class="progress-fill" id="progressBar" style="width: 0%;">0%</div></div>
+            <div class="stats-grid">
+                <div class="stat-card"><div style="font-size: 0.9em;">웹툰</div><div class="stat-number" id="webtoonDone">0</div><div style="font-size: 0.9em;">/ 1</div></div>
+                <div class="stat-card"><div style="font-size: 0.9em;">퀴즈</div><div class="stat-number" id="quizScore">0</div><div style="font-size: 0.9em;">/ 7</div></div>
+                <div class="stat-card"><div style="font-size: 0.9em;">암기카드</div><div class="stat-number" id="flashcardsDone">0</div><div style="font-size: 0.9em;">/ 8</div></div>
+                <div class="stat-card"><div style="font-size: 0.9em;">문제</div><div class="stat-number" id="problemsDone">0</div><div style="font-size: 0.9em;">/ 8</div></div>
+            </div>
+        </div>
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('webtoon')">🎬 웹툰</button>
+            <button class="tab" onclick="showTab('quiz')">🎯 퀴즈</button>
+            <button class="tab" onclick="showTab('flashcard')">🃏 암기카드</button>
+            <button class="tab" onclick="showTab('problems')">📝 문제</button>
+        </div>
+
+        <div id="webtoon" class="section active">
+            <div class="webtoon-panel">
+                <div class="webtoon-title">🎬 WHERE & 연산자!</div>
+
+                <div class="comic-panel">
+                    <div class="character-avatar avatar-student">🧑‍💻</div>
+                    <div class="character-text">
+                        <div class="character-name">수험생</div>
+                        <div class="character-speech">WHERE절은 어떻게 쓰나요?</div>
+                    </div>
+                </div>
+
+                <div class="comic-panel">
+                    <div class="character-avatar avatar-teacher">👨‍🏫</div>
+                    <div class="character-text">
+                        <div class="character-name">SQLD 전문가</div>
+                        <div class="character-speech">
+                            WHERE는 <span class="highlight">조건을 지정하여 원하는 데이터만 조회</span>하는 절이에요!<br><br>
+                            <strong>기본 구조:</strong>
+                        </div>
+                    </div>
+                    <div class="code-box">SELECT 컬럼
+FROM 테이블
+WHERE 조건;</div>
+                    <div class="character-text">
+                        <div class="character-speech">
+                            <strong>비교 연산자:</strong><br>
+                            = (같다), != 또는 <> (다르다)<br>
+                            >, <, >=, <= (크다, 작다)<br><br>
+                            <strong>논리 연산자:</strong><br>
+                            AND (둘 다 참), OR (하나만 참), NOT (부정)
+                        </div>
+                    </div>
+                </div>
+
+                <div class="comic-panel">
+                    <div class="character-avatar avatar-teacher">👨‍🏫</div>
+                    <div class="character-text">
+                        <div class="character-name">SQLD 전문가</div>
+                        <div class="character-speech"><strong>특수 연산자:</strong></div>
+                    </div>
+                    <div class="code-box">-- BETWEEN: 범위 검색
+SELECT * FROM EMP WHERE SALARY BETWEEN 3000 AND 5000;
+
+-- IN: 목록 검색
+SELECT * FROM EMP WHERE DEPT IN ('개발', '영업');
+
+-- LIKE: 패턴 검색
+SELECT * FROM EMP WHERE NAME LIKE '김%';  -- 김으로 시작
+SELECT * FROM EMP WHERE NAME LIKE '%수';  -- 수로 끝남
+SELECT * FROM EMP WHERE NAME LIKE '_철_'; -- 가운데 철
+
+-- IS NULL / IS NOT NULL: NULL 검색
+SELECT * FROM EMP WHERE BONUS IS NULL;
+SELECT * FROM EMP WHERE BONUS IS NOT NULL;</div>
+                </div>
+
+                <div class="comic-panel">
+                    <div class="character-avatar avatar-teacher">👨‍🏫</div>
+                    <div class="character-text">
+                        <div class="character-name">SQLD 전문가</div>
+                        <div class="character-speech"><strong>와일드카드:</strong></div>
+                    </div>
+                    <div class="code-box">% : 0개 이상의 문자
+_ : 정확히 1개의 문자
+
+예시:
+'김%'    → 김, 김철수, 김영희
+'%수'    → 철수, 영수, 수
+'김_수'  → 김철수, 김영수 (3글자만)
+'%철%'   → 김철수, 철이, 철학</div>
+                </div>
+
+                <div class="memory-box">
+                    <h3>🎯 WHERE 연산자 암기법!</h3>
+                    <div class="memory-keyword">비논특와</div>
+                    <div class="memory-story">🔍 "비논리적 특종 와르르!"</div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 25px;">
+                        <div style="background: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                            <div style="font-size: 2.5em; font-weight: bold; color: #667eea; margin-bottom: 10px;">비</div>
+                            <div style="font-size: 1em; color: #495057; font-weight: bold;">비교연산자<br>=, !=, >, <</div>
+                        </div>
+                        <div style="background: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                            <div style="font-size: 2.5em; font-weight: bold; color: #667eea; margin-bottom: 10px;">논</div>
+                            <div style="font-size: 1em; color: #495057; font-weight: bold;">논리연산자<br>AND, OR, NOT</div>
+                        </div>
+                        <div style="background: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                            <div style="font-size: 2.5em; font-weight: bold; color: #667eea; margin-bottom: 10px;">특</div>
+                            <div style="font-size: 1em; color: #495057; font-weight: bold;">특수연산자<br>BETWEEN, IN, LIKE</div>
+                        </div>
+                        <div style="background: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                            <div style="font-size: 2.5em; font-weight: bold; color: #667eea; margin-bottom: 10px;">와</div>
+                            <div style="font-size: 1em; color: #495057; font-weight: bold;">와일드카드<br>%, _</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="exam-point">
+                    <h3>🎯 시험 필수 암기!</h3>
+                    <ul>
+                        <li><strong>비논특와</strong> 암기!</li>
+                        <li>BETWEEN A AND B (A 이상 B 이하)</li>
+                        <li>IN (값1, 값2, ...) - 목록 중 하나</li>
+                        <li>LIKE '%패턴%' - 패턴 검색</li>
+                        <li>% = 0개 이상, _ = 정확히 1개</li>
+                        <li>IS NULL / IS NOT NULL (= NULL 안됨!)</li>
+                        <li>AND > OR (우선순위)</li>
+                        <li>NULL은 = 안됨, IS 사용!</li>
+                    </ul>
+                </div>
+                <button onclick="markWebtoonDone()" class="complete-btn">✅ 웹툰 완료!</button>
+            </div>
+        </div>
+
+        <div id="quiz" class="section">
+            <div class="quiz-container">
+                <h2 style="color: #667eea; text-align: center; font-size: 2em; margin-bottom: 30px;">🎯 퀴즈</h2>
+
+                <div class="question-card">
+                    <div class="question-number">Q1</div>
+                    <div class="question-text">LIKE에서 0개 이상의 문자를 의미하는 것은?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">①</div><div>%</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">②</div><div>_</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">③</div><div>*</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>?</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>% = 0개 이상!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div class="question-number">Q2</div>
+                    <div class="question-text">NULL 검색에 사용하는 것은?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">①</div><div>= NULL</div></div>
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">②</div><div>IS NULL</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">③</div><div>== NULL</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>NULL()</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>NULL은 IS 사용!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div class="question-number">Q3</div>
+                    <div class="question-text">BETWEEN 3000 AND 5000의 의미는?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">①</div><div>3000 초과 5000 미만</div></div>
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">②</div><div>3000 이상 5000 이하</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">③</div><div>3000 미만 5000 초과</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>3000과 5000만</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>BETWEEN = 이상 AND 이하!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div class="question-number">Q4</div>
+                    <div class="question-text">IN 연산자의 역할은?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">①</div><div>여러 값 중 하나와 일치</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">②</div><div>범위 검색</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">③</div><div>패턴 검색</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>NULL 검색</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>IN = 목록 중 하나!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div class="question-number">Q5</div>
+                    <div class="question-text">'김_수'가 검색하는 것은?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">①</div><div>김수, 김철수, 김영수</div></div>
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">②</div><div>김철수, 김영수 (3글자만)</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">③</div><div>김으로 시작하는 모든 것</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>수로 끝나는 모든 것</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>_ = 정확히 1개 문자!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div class="question-number">Q6</div>
+                    <div class="question-text">논리 연산자 우선순위는?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">①</div><div>AND > OR</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">②</div><div>OR > AND</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">③</div><div>동일</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>NOT > OR</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>AND가 OR보다 우선!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div class="question-number">Q7</div>
+                    <div class="question-text">다른 것을 의미하는 연산자가 아닌 것은?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">①</div><div>!=</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">②</div><div><></div></div>
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">③</div><div>=!</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>둘 다 같다</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>!= 또는 <> 사용!</p></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="flashcard" class="section">
+            <div class="webtoon-panel">
+                <h2 style="color: #667eea; margin-bottom: 20px; font-size: 2em; text-align: center;">🃏 암기 카드</h2>
+                <div class="flashcard-grid">
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front"><h3>WHERE</h3></div>
+                            <div class="flashcard-back"><h3>정의</h3><p>조건 지정<br>원하는 데이터만 조회</p></div>
+                        </div>
+                    </div>
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front"><h3>BETWEEN</h3></div>
+                            <div class="flashcard-back"><h3>연산자</h3><p>범위 검색<br>A 이상 B 이하</p></div>
+                        </div>
+                    </div>
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front"><h3>IN</h3></div>
+                            <div class="flashcard-back"><h3>연산자</h3><p>목록 중 하나<br>OR의 축약</p></div>
+                        </div>
+                    </div>
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front"><h3>LIKE</h3></div>
+                            <div class="flashcard-back"><h3>연산자</h3><p>패턴 검색<br>%, _ 사용</p></div>
+                        </div>
+                    </div>
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front"><h3>%</h3></div>
+                            <div class="flashcard-back"><h3>와일드카드</h3><p>0개 이상 문자</p></div>
+                        </div>
+                    </div>
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front"><h3>_</h3></div>
+                            <div class="flashcard-back"><h3>와일드카드</h3><p>정확히 1개 문자</p></div>
+                        </div>
+                    </div>
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front"><h3>IS NULL</h3></div>
+                            <div class="flashcard-back"><h3>NULL 검색</h3><p>= NULL 안됨!</p></div>
+                        </div>
+                    </div>
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front"><h3>비논특와</h3></div>
+                            <div class="flashcard-back"><h3>암기법</h3><p>비교<br>논리<br>특수<br>와일드카드</p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="problems" class="section">
+            <div class="problem-bank">
+                <h2 style="color: #667eea; margin-bottom: 20px; font-size: 2em;">📝 실전 문제</h2>
+
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <div class="question-number">실전 1</div>
+                        <span class="difficulty-badge difficulty-easy">쉬움</span>
+                    </div>
+                    <div class="question-text">NULL 검색 시 올바른 문법은?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">①</div><div>WHERE COL = NULL</div></div>
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">②</div><div>WHERE COL IS NULL</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>WHERE COL == NULL</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>WHERE NULL(COL)</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>NULL은 IS 사용!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <div class="question-number">실전 2</div>
+                        <span class="difficulty-badge difficulty-medium">보통</span>
+                    </div>
+                    <div class="question-text">'김%'가 검색하는 것은?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">①</div><div>김, 김철수, 김영희</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">②</div><div>김철수만</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>3글자만</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>김 제외</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>% = 0개 이상!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <div class="question-number">실전 3</div>
+                        <span class="difficulty-badge difficulty-easy">쉬움</span>
+                    </div>
+                    <div class="question-text">BETWEEN 10 AND 20은?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">①</div><div>10 이상 20 이하</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">②</div><div>10 초과 20 미만</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>10, 20만</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>10 미만 20 초과</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>BETWEEN = 이상 AND 이하!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <div class="question-number">실전 4</div>
+                        <span class="difficulty-badge difficulty-medium">보통</span>
+                    </div>
+                    <div class="question-text">IN ('A', 'B', 'C')와 동일한 것은?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">①</div><div>= 'A' OR = 'B' OR = 'C'</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">②</div><div>= 'A' AND = 'B' AND = 'C'</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>BETWEEN 'A' AND 'C'</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>LIKE 'ABC'</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>IN = OR의 축약!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <div class="question-number">실전 5</div>
+                        <span class="difficulty-badge difficulty-hard">어려움</span>
+                    </div>
+                    <div class="question-text">'_철_'이 검색하는 것은?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">①</div><div>김철수 (3글자, 가운데 철)</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">②</div><div>철수, 철이</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>철로 시작</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>모든 철</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>_ = 정확히 1개씩!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <div class="question-number">실전 6</div>
+                        <span class="difficulty-badge difficulty-medium">보통</span>
+                    </div>
+                    <div class="question-text">AND와 OR의 우선순위는?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">①</div><div>AND가 먼저</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">②</div><div>OR가 먼저</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>동일</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>왼쪽부터</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>AND > OR!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <div class="question-number">실전 7</div>
+                        <span class="difficulty-badge difficulty-easy">쉬움</span>
+                    </div>
+                    <div class="question-text">다르다를 의미하는 연산자는?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">①</div><div>!= 또는 <></div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">②</div><div>=!</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>><</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>NOT</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>!= 또는 <>!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <div class="question-number">실전 8</div>
+                        <span class="difficulty-badge difficulty-hard">어려움</span>
+                    </div>
+                    <div class="question-text">LIKE 사용 시 주의사항은?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">①</div><div>%, _ 와일드카드 필수</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">②</div><div>숫자만 가능</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>NULL 검색 가능</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>= 와 동일</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>LIKE는 패턴 검색!</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let webtoonCompleted = false, quizCorrect = 0, flashcardsFlipped = new Set(), problemsSolved = 0;
+        window.addEventListener('scroll', ()=> document.getElementById('scrollTopBtn').classList.toggle('show', window.pageYOffset > 300));
+        function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        function scrollToSection(sectionId) { showTab(sectionId); setTimeout(() => window.scrollTo({ top: document.getElementById(sectionId).getBoundingClientRect().top + window.pageYOffset - 100, behavior: 'smooth' }), 100); }
+        function showTab(tabName) { document.querySelectorAll('.section').forEach(s => s.classList.remove('active')); document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.getElementById(tabName).classList.add('active'); event?.target?.classList.add('active'); }
+        function checkAnswer(element, isCorrect, section) { const options = element.parentElement.querySelectorAll('.option'); const explanation = element.parentElement.nextElementSibling; if (element.classList.contains('disabled')) return; options.forEach(opt => opt.classList.add('disabled')); if (isCorrect) { element.classList.add('correct'); if (section === 'quiz') quizCorrect++; if (section === 'problems') problemsSolved++; } else { element.classList.add('incorrect'); options.forEach(opt => { if (opt.onclick.toString().includes('true')) opt.classList.add('correct'); }); } explanation.classList.add('show'); updateProgress(); }
+        function flipCard(card) { card.classList.toggle('flipped'); const idx = Array.from(card.parentElement.children).indexOf(card); if (card.classList.contains('flipped')) flashcardsFlipped.add(idx); updateProgress(); }
+        function markWebtoonDone() { if (!webtoonCompleted) { webtoonCompleted = true; updateProgress(); alert('🎉 완료!'); } }
+        function updateProgress() { document.getElementById('webtoonDone').textContent = webtoonCompleted ? 1 : 0; document.getElementById('quizScore').textContent = quizCorrect; document.getElementById('flashcardsDone').textContent = flashcardsFlipped.size; document.getElementById('problemsDone').textContent = problemsSolved; const total = 24; const completed = (webtoonCompleted ? 1 : 0) + quizCorrect + flashcardsFlipped.size + problemsSolved; const pct = Math.round((completed / total) * 100); document.getElementById('progressBar').style.width = pct + '%'; document.getElementById('progressBar').textContent = pct + '%'; }
+    </script>
+</body>
+</html>

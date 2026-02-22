@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQLD Chapter 17: DCL</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding-top: 60px; padding-bottom: 20px; }
+.container { max-width: 1200px; margin: 0 auto; padding: 10px 20px; }
+.header { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; }
+.header h1 { color: #667eea; font-size: 2em; margin-bottom: 10px; }
+.chapter-badge { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px 30px; border-radius: 20px; display: inline-block; font-weight: bold; margin-bottom: 15px; }
+.webtoon-panel { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+.webtoon-title { font-size: 2em; color: #667eea; margin-bottom: 30px; text-align: center; font-weight: bold; }
+.comic-panel { background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%); border: 4px solid #667eea; border-radius: 20px; padding: 25px; margin-bottom: 25px; }
+.code-box { background: #2d2d2d; color: #f8f8f2; padding: 20px; border-radius: 10px; font-family: 'Courier New', monospace; margin: 15px 0; overflow-x: auto; font-size: 0.95em; }
+.memory-box { background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%); border: 5px solid #ffc107; border-radius: 20px; padding: 30px; margin: 30px 0; box-shadow: 0 10px 25px rgba(255, 193, 7, 0.3); }
+.memory-box h3 { color: #856404; font-size: 1.8em; margin-bottom: 20px; text-align: center; }
+.memory-keyword { font-size: 3em; font-weight: bold; color: #ff6b6b; text-align: center; margin: 20px 0; text-shadow: 3px 3px 6px rgba(0,0,0,0.1); letter-spacing: 5px; }
+.memory-story { font-size: 1.4em; text-align: center; color: #495057; font-weight: bold; margin: 20px 0; }
+.exam-point { background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%); color: white; padding: 25px; border-radius: 15px; margin: 25px 0; box-shadow: 0 10px 25px rgba(255, 107, 107, 0.3); }
+.exam-point h3 { font-size: 1.6em; margin-bottom: 15px; }
+.exam-point ul { margin-left: 25px; line-height: 2; }
+.exam-point li { margin: 10px 0; font-size: 1.1em; }
+.highlight { background: linear-gradient(transparent 60%, #ffd89b 60%); font-weight: bold; padding: 2px 6px; }
+.complete-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 40px; border-radius: 25px; font-size: 1.2em; cursor: pointer; margin-top: 20px; width: 100%; font-weight: bold; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header"><div class="chapter-badge">📚 Chapter 17</div><h1>DCL (Data Control Language)</h1><p style="color: #666; margin-top: 10px; font-size: 1.1em;">권한 제어!</p></div>
+<div class="webtoon-panel"><div class="webtoon-title">🎬 DCL 완벽 정리!</div>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; font-size: 1.5em; margin-bottom: 15px;">DCL이란?</h3>
+<p style="font-size: 1.1em; line-height: 1.8; color: #333;">
+<span class="highlight">데이터베이스 권한을 제어하는 언어!</span><br><br>
+<strong>주요 명령어:</strong><br>
+• GRANT: 권한 부여<br>
+• REVOKE: 권한 회수
+</p>
+</div>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; font-size: 1.5em; margin-bottom: 15px;">GRANT - 권한 부여!</h3>
+<p style="font-size: 1.1em; line-height: 1.8; color: #333; margin-bottom: 15px;">
+<strong>사용자에게 권한 주기</strong>
+</p>
+<div class="code-box">-- SELECT 권한 부여
+GRANT SELECT ON EMP TO USER1;
+
+-- 여러 권한 부여
+GRANT SELECT, INSERT, UPDATE ON EMP TO USER1;
+
+-- 모든 권한 부여
+GRANT ALL ON EMP TO USER1;
+
+-- WITH GRANT OPTION (권한 재부여 가능)
+GRANT SELECT ON EMP TO USER1 WITH GRANT OPTION;</div>
+</div>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; font-size: 1.5em; margin-bottom: 15px;">REVOKE - 권한 회수!</h3>
+<p style="font-size: 1.1em; line-height: 1.8; color: #333; margin-bottom: 15px;">
+<strong>사용자의 권한 회수</strong>
+</p>
+<div class="code-box">-- SELECT 권한 회수
+REVOKE SELECT ON EMP FROM USER1;
+
+-- 여러 권한 회수
+REVOKE SELECT, INSERT ON EMP FROM USER1;
+
+-- 모든 권한 회수
+REVOKE ALL ON EMP FROM USER1;
+
+-- CASCADE (연쇄 회수)
+REVOKE SELECT ON EMP FROM USER1 CASCADE;</div>
+</div>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; font-size: 1.5em; margin-bottom: 15px;">주요 권한 종류</h3>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px;">
+<div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.1);">
+<div style="font-weight: bold; color: #667eea; margin-bottom: 10px;">객체 권한</div>
+<div style="font-size: 0.95em; color: #666;">
+• SELECT<br>
+• INSERT<br>
+• UPDATE<br>
+• DELETE<br>
+• ALTER<br>
+• INDEX
+</div>
+</div>
+<div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.1);">
+<div style="font-weight: bold; color: #667eea; margin-bottom: 10px;">시스템 권한</div>
+<div style="font-size: 0.95em; color: #666;">
+• CREATE TABLE<br>
+• CREATE VIEW<br>
+• CREATE USER<br>
+• DROP TABLE<br>
+• DROP USER
+</div>
+</div>
+</div>
+</div>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; font-size: 1.5em; margin-bottom: 15px;">ROLE - 역할!</h3>
+<p style="font-size: 1.1em; line-height: 1.8; color: #333; margin-bottom: 15px;">
+<strong>여러 권한을 묶어서 관리</strong>
+</p>
+<div class="code-box">-- ROLE 생성
+CREATE ROLE DEVELOPER;
+
+-- ROLE에 권한 부여
+GRANT SELECT, INSERT ON EMP TO DEVELOPER;
+
+-- 사용자에게 ROLE 부여
+GRANT DEVELOPER TO USER1;
+
+-- ROLE 회수
+REVOKE DEVELOPER FROM USER1;</div>
+</div>
+
+<div class="memory-box">
+<h3>🎯 DCL 암기법!</h3>
+<div class="memory-keyword">그리</div>
+<div class="memory-story">🎨 "그림 리뷰!"</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 25px;">
+<div style="background: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+<div style="font-size: 2.5em; font-weight: bold; color: #667eea; margin-bottom: 10px;">그</div>
+<div style="font-size: 1em; color: #495057; font-weight: bold;">GRANT<br>권한 부여</div>
+</div>
+<div style="background: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+<div style="font-size: 2.5em; font-weight: bold; color: #667eea; margin-bottom: 10px;">리</div>
+<div style="font-size: 1em; color: #495057; font-weight: bold;">REVOKE<br>권한 회수</div>
+</div>
+</div>
+</div>
+
+<div class="exam-point">
+<h3>🎯 시험 필수 암기!</h3>
+<ul>
+<li><strong>그리</strong> 암기!</li>
+<li>GRANT = 권한 부여</li>
+<li>REVOKE = 권한 회수</li>
+<li>WITH GRANT OPTION = 권한 재부여 가능</li>
+<li>CASCADE = 연쇄 회수</li>
+<li>ROLE = 권한 묶음</li>
+<li>객체 권한 vs 시스템 권한</li>
+<li>ALL = 모든 권한</li>
+</ul>
+</div>
+
+<button onclick="alert('✅ 완료!')" class="complete-btn">✅ 완료!</button>
+</div>
+</div>
+</body>
+</html>

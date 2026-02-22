@@ -1,0 +1,2216 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQLD Chapter 1: 데이터 모델링의 이해 (완전판)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding-top: 60px;
+            padding-bottom: 20px;
+        }
+
+        /* 고정 네비게이션 */
+        .fixed-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            padding: 10px 15px;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .nav-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 6px 12px;
+            background: #f8f9fa;
+            border: 2px solid #667eea;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: bold;
+            color: #667eea;
+            transition: all 0.3s;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        /* 맨 위로 버튼 */
+        .scroll-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 2em;
+            color: white;
+        }
+
+        .scroll-to-top.show {
+            opacity: 1;
+        }
+
+        .scroll-to-top:hover {
+            transform: scale(1.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 10px 20px 20px 20px;
+        }
+
+        /* 헤더 */
+        .header {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .chapter-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 30px;
+            border-radius: 20px;
+            display: inline-block;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        /* 탭 */
+        .tabs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .tab {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s;
+            color: #666;
+            text-align: center;
+        }
+
+        .tab:hover {
+            background: #e9ecef;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        /* 섹션 */
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        /* 웹툰 패널 */
+        .webtoon-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .webtoon-title {
+            font-size: 2em;
+            color: #667eea;
+            margin-bottom: 30px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* 만화 패널 - 모바일 최적화 */
+        .comic-panel {
+            background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+            border: 4px solid #667eea;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .comic-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .character-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5em;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            margin: 0 auto;
+        }
+
+        .avatar-student {
+            background: linear-gradient(135deg, #ffd89b 0%, #ff9a9e 100%);
+        }
+
+        .avatar-teacher {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        }
+
+        .character-text {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .character-name {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .character-speech {
+            font-size: 1.1em;
+            line-height: 1.8;
+            color: #333;
+        }
+
+        /* 암기법 박스 */
+        .memory-box {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+            border: 5px solid #ffc107;
+            border-radius: 20px;
+            padding: 30px;
+            margin: 30px 0;
+            box-shadow: 0 10px 25px rgba(255, 193, 7, 0.3);
+        }
+
+        .memory-box h3 {
+            color: #856404;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .memory-keyword {
+            font-size: 3.5em;
+            font-weight: bold;
+            color: #ff6b6b;
+            text-align: center;
+            margin: 20px 0;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.1);
+            letter-spacing: 8px;
+        }
+
+        .memory-story {
+            font-size: 1.6em;
+            text-align: center;
+            color: #495057;
+            font-weight: bold;
+            margin: 20px 0;
+            line-height: 1.6;
+        }
+
+        .memory-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .memory-item {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .memory-item-char {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .memory-item-text {
+            font-size: 1em;
+            color: #495057;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+
+        .highlight {
+            background: linear-gradient(transparent 60%, #ffd89b 60%);
+            font-weight: bold;
+            padding: 2px 6px;
+        }
+
+        /* 핵심 포인트 */
+        .key-point {
+            background: #e7f3ff;
+            border-left: 6px solid #2196F3;
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 10px;
+        }
+
+        .key-point h3 {
+            color: #1976D2;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .key-point ul {
+            margin-left: 25px;
+            line-height: 2;
+        }
+
+        .key-point li {
+            margin: 10px 0;
+            font-size: 1.05em;
+        }
+
+        /* 시험 출제 포인트 */
+        .exam-point {
+            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 25px 0;
+            box-shadow: 0 10px 25px rgba(255, 107, 107, 0.3);
+        }
+
+        .exam-point h3 {
+            font-size: 1.6em;
+            margin-bottom: 15px;
+        }
+
+        .exam-point ul {
+            margin-left: 25px;
+            line-height: 2;
+        }
+
+        .exam-point li {
+            margin: 10px 0;
+            font-size: 1.1em;
+        }
+
+        /* 퀴즈 */
+        .quiz-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .question-card {
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .question-number {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+
+        .question-text {
+            font-size: 1.25em;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.8;
+        }
+
+        .options {
+            display: grid;
+            gap: 12px;
+        }
+
+        .option {
+            background: white;
+            border: 3px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.05em;
+        }
+
+        .option:hover {
+            border-color: #667eea;
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .option-label {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1em;
+            flex-shrink: 0;
+        }
+
+        .option.correct {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .option.correct .option-label {
+            background: #28a745;
+        }
+
+        .option.incorrect {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .option.incorrect .option-label {
+            background: #dc3545;
+        }
+
+        .option.disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .explanation {
+            background: #e7f3ff;
+            border-left: 6px solid #2196F3;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 10px;
+            display: none;
+            line-height: 1.8;
+        }
+
+        .explanation.show {
+            display: block;
+        }
+
+        .explanation h4 {
+            color: #1976D2;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .explanation p {
+            font-size: 1.05em;
+        }
+
+        /* 암기 카드 */
+        .flashcard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .flashcard {
+            height: 280px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+        }
+
+        .flashcard.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 20px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .flashcard-front {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .flashcard-front h3 {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+        }
+
+        .flashcard-front p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .flashcard-front .hint {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-top: 20px;
+        }
+
+        .flashcard-back {
+            background: white;
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-back h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+
+        .flashcard-back p {
+            color: #666;
+            line-height: 1.8;
+            font-size: 1.05em;
+        }
+
+        .flashcard-back .example {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #e9ecef;
+            font-size: 0.9em;
+            color: #999;
+        }
+
+        /* 문제 은행 */
+        .problem-bank {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .difficulty-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .difficulty-easy {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .difficulty-medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .difficulty-hard {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* 진행도 */
+        .progress-section {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .progress-bar {
+            height: 35px;
+            background: #e0e0e0;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .complete-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-size: 1.2em;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .complete-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding-top: 100px;
+            }
+
+            .nav-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .nav-buttons {
+                justify-content: center;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .webtoon-title {
+                font-size: 1.5em;
+            }
+
+            .memory-keyword {
+                font-size: 2.5em;
+                letter-spacing: 5px;
+            }
+
+            .memory-story {
+                font-size: 1.3em;
+            }
+
+            .flashcard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .scroll-to-top {
+                width: 50px;
+                height: 50px;
+                bottom: 20px;
+                right: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 고정 네비게이션 -->
+    <div class="fixed-nav">
+        <div class="nav-container">
+            <div class="nav-title">📚 Chapter 1: 데이터 모델링</div>
+            <div class="nav-buttons">
+                <button class="nav-btn" onclick="scrollToSection('webtoon')">🎬 웹툰</button>
+                <button class="nav-btn" onclick="scrollToSection('quiz')">🎯 퀴즈</button>
+                <button class="nav-btn" onclick="scrollToSection('flashcard')">🃏 암기카드</button>
+                <button class="nav-btn" onclick="scrollToSection('problems')">📝 문제</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 맨 위로 버튼 -->
+    <div class="scroll-to-top" id="scrollTopBtn" onclick="scrollToTop()">
+        ↑
+    </div>
+
+    <div class="container">
+        <!-- 헤더 -->
+        <div class="header" id="top">
+            <div class="chapter-badge">📚 Chapter 1</div>
+            <h1>데이터 모델링의 이해</h1>
+            <p style="color: #666; margin-top: 10px; font-size: 1.1em;">SQLD 1과목 핵심! 암기법으로 완벽 정복!</p>
+        </div>
+
+        <!-- 진행도 -->
+        <div class="progress-section">
+            <h2 style="color: #667eea; margin-bottom: 15px;">📊 학습 진행도</h2>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar" style="width: 0%;">0%</div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div style="font-size: 0.9em;">웹툰</div>
+                    <div class="stat-number" id="webtoonDone">0</div>
+                    <div style="font-size: 0.9em;">/ 1</div>
+                </div>
+                <div class="stat-card">
+                    <div style="font-size: 0.9em;">퀴즈</div>
+                    <div class="stat-number" id="quizScore">0</div>
+                    <div style="font-size: 0.9em;">/ 10</div>
+                </div>
+                <div class="stat-card">
+                    <div style="font-size: 0.9em;">암기카드</div>
+                    <div class="stat-number" id="flashcardsDone">0</div>
+                    <div style="font-size: 0.9em;">/ 15</div>
+                </div>
+                <div class="stat-card">
+                    <div style="font-size: 0.9em;">문제</div>
+                    <div class="stat-number" id="problemsDone">0</div>
+                    <div style="font-size: 0.9em;">/ 8</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 탭 -->
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('webtoon')">🎬 웹툰 학습</button>
+            <button class="tab" onclick="showTab('quiz')">🎯 퀴즈</button>
+            <button class="tab" onclick="showTab('flashcard')">🃏 암기 카드</button>
+            <button class="tab" onclick="showTab('problems')">📝 문제 은행</button>
+        </div>
+
+        <!-- 웹툰 섹션 -->
+        <div id="webtoon" class="section active">
+            <div class="webtoon-panel">
+                <div class="webtoon-title">🎬 Episode 1: 데이터베이스 3단계 스키마</div>
+                
+                <!-- Panel 1 -->
+                <div class="comic-panel">
+                    <div class="comic-content">
+                        <div class="character-avatar avatar-student">🧑‍💻</div>
+                        <div class="character-text">
+                            <div class="character-name">수험생</div>
+                            <div class="character-speech">
+                                선생님! SQLD 시험에서 스키마 3단계가 자주 나온다는데... 외부, 개념, 내부 스키마가 뭔가요? 😵
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 2 -->
+                <div class="comic-panel">
+                    <div class="comic-content">
+                        <div class="character-avatar avatar-teacher">👨‍🏫</div>
+                        <div class="character-text">
+                            <div class="character-name">SQLD 전문가</div>
+                            <div class="character-speech">
+                                좋은 질문이에요! 이건 <span class="highlight">시험 단골 문제</span>예요! 🔥<br><br>
+                                쉽게 말하면 데이터베이스를 <strong>보는 관점</strong>이 3가지라는 거예요.<br><br>
+                                <strong>🏢 외부 스키마</strong> = 사용자가 보는 화면 (View)<br>
+                                예) 쇼핑몰 앱에서 "내 주문 목록" 보기<br><br>
+                                <strong>🗂️ 개념 스키마</strong> = 전체 데이터베이스 구조<br>
+                                예) 고객, 주문, 상품 테이블 전체<br><br>
+                                <strong>💾 내부 스키마</strong> = 실제 저장 방법<br>
+                                예) 디스크 어디에, 어떤 형식으로 저장할지
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 암기법 박스 1 -->
+                <div class="memory-box">
+                    <h3>🎯 절대 안 까먹는 암기법!</h3>
+                    <div class="memory-keyword">외개내</div>
+                    <div class="memory-story">🏠 "외할머니 개가 내 집에 왔다!"</div>
+                    
+                    <div class="memory-breakdown">
+                        <div class="memory-item">
+                            <div class="memory-item-char">외</div>
+                            <div class="memory-item-text">외부 스키마<br>(사용자 관점)<br>여러 개</div>
+                        </div>
+                        <div class="memory-item">
+                            <div class="memory-item-char">개</div>
+                            <div class="memory-item-text">개념 스키마<br>(전체 DB)<br>1개만</div>
+                        </div>
+                        <div class="memory-item">
+                            <div class="memory-item-char">내</div>
+                            <div class="memory-item-text">내부 스키마<br>(물리 저장)<br>1개만</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 3 -->
+                <div class="comic-panel">
+                    <div class="comic-content">
+                        <div class="character-avatar avatar-student">🧑‍💻</div>
+                        <div class="character-text">
+                            <div class="character-name">수험생</div>
+                            <div class="character-speech">
+                                오! 외개내! 완전 외우기 쉽네요! 😆<br>
+                                그럼 데이터 모델링도 3단계라고 했는데...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 4 -->
+                <div class="comic-panel">
+                    <div class="comic-content">
+                        <div class="character-avatar avatar-teacher">👨‍🏫</div>
+                        <div class="character-text">
+                            <div class="character-name">SQLD 전문가</div>
+                            <div class="character-speech">
+                                맞아요! 데이터 모델링도 <strong>3단계</strong>로 진행돼요!<br><br>
+                                <strong>1️⃣ 개념적 모델링</strong><br>
+                                • 추상적으로 큰 그림 그리기<br>
+                                • 핵심 엔터티만 찾기<br>
+                                • DBMS 독립적<br><br>
+                                <strong>2️⃣ 논리적 모델링</strong><br>
+                                • 속성, 관계, 식별자 정의<br>
+                                • ERD 작성<br>
+                                • 정규화 수행<br><br>
+                                <strong>3️⃣ 물리적 모델링</strong><br>
+                                • 실제 DBMS에 구현<br>
+                                • 테이블, 컬럼, 타입 정의<br>
+                                • 인덱스 설계
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 암기법 박스 2 -->
+                <div class="memory-box">
+                    <h3>🎯 데이터 모델링 3단계 암기법!</h3>
+                    <div class="memory-keyword">개논물</div>
+                    <div class="memory-story">🏞️ "개울가에 논이랑 물이 있다!"</div>
+                    
+                    <div class="memory-breakdown">
+                        <div class="memory-item">
+                            <div class="memory-item-char">개</div>
+                            <div class="memory-item-text">개념적<br>모델링<br>(추상적)</div>
+                        </div>
+                        <div class="memory-item">
+                            <div class="memory-item-char">논</div>
+                            <div class="memory-item-text">논리적<br>모델링<br>(ERD)</div>
+                        </div>
+                        <div class="memory-item">
+                            <div class="memory-item-char">물</div>
+                            <div class="memory-item-text">물리적<br>모델링<br>(구현)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 5 -->
+                <div class="comic-panel">
+                    <div class="comic-content">
+                        <div class="character-avatar avatar-student">🧑‍💻</div>
+                        <div class="character-text">
+                            <div class="character-name">수험생</div>
+                            <div class="character-speech">
+                                개논물도 외웠어요! 그런데 사상(Mapping)이라는 게 있던데 그건 뭔가요? 🤔
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 6 -->
+                <div class="comic-panel">
+                    <div class="comic-content">
+                        <div class="character-avatar avatar-teacher">👨‍🏫</div>
+                        <div class="character-text">
+                            <div class="character-name">SQLD 전문가</div>
+                            <div class="character-speech">
+                                사상(Mapping)은 <span class="highlight">스키마 간 연결</span>을 말해요!<br><br>
+                                <strong>📍 논리적 사상</strong><br>
+                                외부 스키마와 개념 스키마의 관계<br>
+                                → 개념 스키마 바뀌어도 외부 스키마 영향 없음<br><br>
+                                <strong>📍 물리적 사상</strong><br>
+                                개념 스키마와 내부 스키마의 관계<br>
+                                → 내부 스키마 바뀌어도 개념 스키마 영향 없음<br><br>
+                                이게 바로 <strong>데이터 독립성</strong>이에요!
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 7 -->
+                <div class="comic-panel">
+                    <div class="comic-content">
+                        <div class="character-avatar avatar-student">🧑‍💻</div>
+                        <div class="character-text">
+                            <div class="character-name">수험생</div>
+                            <div class="character-speech">
+                                그럼 데이터 모델의 구성 요소는 뭐가 있나요?
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 8 -->
+                <div class="comic-panel">
+                    <div class="comic-content">
+                        <div class="character-avatar avatar-teacher">👨‍🏫</div>
+                        <div class="character-text">
+                            <div class="character-name">SQLD 전문가</div>
+                            <div class="character-speech">
+                                데이터 모델의 3가지 구성 요소가 있어요!<br><br>
+                                <strong>📦 Entity (엔터티)</strong><br>
+                                업무와 관련된 어떤 것 (Things)<br>
+                                예) 학생, 과목<br><br>
+                                <strong>🏷️ Attribute (속성)</strong><br>
+                                어떤 것이 갖는 성격<br>
+                                예) 이름, 학점, 과목명<br><br>
+                                <strong>🔗 Relationship (관계)</strong><br>
+                                어떤 것 간의 관계<br>
+                                예) 수강하다
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 암기법 박스 3 -->
+                <div class="memory-box">
+                    <h3>🎯 데이터 모델 3요소 암기법!</h3>
+                    <div class="memory-keyword">엔속관</div>
+                    <div class="memory-story">👥 "엔지니어가 속도로 관리한다!"</div>
+                    
+                    <div class="memory-breakdown">
+                        <div class="memory-item">
+                            <div class="memory-item-char">엔</div>
+                            <div class="memory-item-text">엔터티<br>(Entity)<br>대상</div>
+                        </div>
+                        <div class="memory-item">
+                            <div class="memory-item-char">속</div>
+                            <div class="memory-item-text">속성<br>(Attribute)<br>성격</div>
+                        </div>
+                        <div class="memory-item">
+                            <div class="memory-item-char">관</div>
+                            <div class="memory-item-text">관계<br>(Relationship)<br>연결</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 9 -->
+                <div class="comic-panel">
+                    <div class="comic-content">
+                        <div class="character-avatar avatar-student">🧑‍💻</div>
+                        <div class="character-text">
+                            <div class="character-name">수험생</div>
+                            <div class="character-speech">
+                                엔터티 유형도 여러 가지라던데... 그것도 알려주세요!
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 10 -->
+                <div class="comic-panel">
+                    <div class="comic-content">
+                        <div class="character-avatar avatar-teacher">👨‍🏫</div>
+                        <div class="character-text">
+                            <div class="character-name">SQLD 전문가</div>
+                            <div class="character-speech">
+                                엔터티는 <strong>4가지 유형</strong>이 있어요!<br><br>
+                                <strong>🏢 유형(Tangible) 엔터티</strong><br>
+                                물리적 형태가 있고 안정적<br>
+                                예) 교수, 강의실, 물품, 사원<br><br>
+                                <strong>💭 개념(Conceptual) 엔터티</strong><br>
+                                물리적 형태는 없지만 관리해야 할 개념<br>
+                                예) 수업, 보험상품, 시스템, 조직<br><br>
+                                <strong>📅 사건(Event) 엔터티</strong><br>
+                                업무 수행 과정에서 발생<br>
+                                예) 수강신청, 주문, 입금, 미납<br><br>
+                                <strong>⭐ 중심(Main) 엔터티</strong><br>
+                                기본이 되는 엔터티, 다른 엔터티와 관계 많음<br>
+                                예) 계약, 주문, 정구, 사고
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 암기법 박스 4 -->
+                <div class="memory-box">
+                    <h3>🎯 엔터티 유형 암기법!</h3>
+                    <div class="memory-keyword">유개사중</div>
+                    <div class="memory-story">🥛 "유개 사려고 중국집 갔다!"</div>
+                    
+                    <div class="memory-breakdown">
+                        <div class="memory-item">
+                            <div class="memory-item-char">유</div>
+                            <div class="memory-item-text">유형<br>(Tangible)<br>물리적</div>
+                        </div>
+                        <div class="memory-item">
+                            <div class="memory-item-char">개</div>
+                            <div class="memory-item-text">개념<br>(Conceptual)<br>추상적</div>
+                        </div>
+                        <div class="memory-item">
+                            <div class="memory-item-char">사</div>
+                            <div class="memory-item-text">사건<br>(Event)<br>발생</div>
+                        </div>
+                        <div class="memory-item">
+                            <div class="memory-item-char">중</div>
+                            <div class="memory-item-text">중심<br>(Main)<br>기본</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 11 -->
+                <div class="comic-panel">
+                    <div class="comic-content">
+                        <div class="character-avatar avatar-student">🧑‍💻</div>
+                        <div class="character-text">
+                            <div class="character-name">수험생</div>
+                            <div class="character-speech">
+                                완벽해요! 외개내, 개논물, 엔속관, 유개사중!<br>
+                                이제 절대 안 까먹을 것 같아요! 🎉
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 시험 출제 포인트 -->
+                <div class="exam-point">
+                    <h3>🎯 시험 필수 암기 (100% 출제!)</h3>
+                    <ul>
+                        <li><strong>외개내</strong> = 외부·개념·내부 스키마 (외할머니 개가 내 집에)</li>
+                        <li><strong>개논물</strong> = 개념적·논리적·물리적 모델링 (개울가에 논이랑 물이)</li>
+                        <li><strong>엔속관</strong> = 엔터티·속성·관계 (엔지니어가 속도로 관리)</li>
+                        <li><strong>유개사중</strong> = 유형·개념·사건·중심 엔터티 (유개 사려고 중국집)</li>
+                        <li><strong>논리적 독립성</strong>: 개념 스키마 변경 → 외부 스키마 불변</li>
+                        <li><strong>물리적 독립성</strong>: 내부 스키마 변경 → 개념 스키마 불변</li>
+                        <li><strong>ERD 작성</strong>: 논리적 모델링 단계</li>
+                        <li><strong>정규화</strong>: 논리적 모델링 단계</li>
+                        <li><strong>외부 스키마 구현</strong>: 뷰(View) 사용</li>
+                        <li><strong>개념 스키마</strong>: 하나만 존재 (전체 스키마)</li>
+                    </ul>
+                </div>
+
+                <div class="key-point">
+                    <h3>📚 핵심 정리</h3>
+                    <ul>
+                        <li><strong>스키마 3단계</strong>: 외개내 (관점의 차이)</li>
+                        <li><strong>모델링 3단계</strong>: 개논물 (추상→구체)</li>
+                        <li><strong>데이터 모델 3요소</strong>: 엔속관</li>
+                        <li><strong>엔터티 유형</strong>: 유개사중</li>
+                        <li>엔터티는 <strong>2개 이상의 인스턴스, 2개 이상의 속성</strong> 필요</li>
+                        <li>속성은 <strong>더 이상 분해 불가</strong> (원자성)</li>
+                        <li>물리적 독립성이 논리적 독립성보다 <strong>구현 쉬움</strong></li>
+                    </ul>
+                </div>
+
+                <button onclick="markWebtoonDone()" class="complete-btn">
+                    ✅ 웹툰 학습 완료!
+                </button>
+            </div>
+        </div>
+
+        <!-- 퀴즈 섹션 -->
+        <div id="quiz" class="section">
+            <div class="quiz-container">
+                <h2 style="color: #667eea; text-align: center; font-size: 2em; margin-bottom: 30px;">🎯 Chapter 1 완전 정복 퀴즈</h2>
+                
+                <!-- Q1 -->
+                <div class="question-card">
+                    <div class="question-number">Question 1</div>
+                    <div class="question-text">
+                        데이터베이스 3단계 스키마 구조를 순서대로 나열한 것은?
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">①</div>
+                            <div>내부 스키마 → 개념 스키마 → 외부 스키마</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')">
+                            <div class="option-label">②</div>
+                            <div>외부 스키마 → 개념 스키마 → 내부 스키마</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">③</div>
+                            <div>개념 스키마 → 외부 스키마 → 내부 스키마</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">④</div>
+                            <div>외부 스키마 → 내부 스키마 → 개념 스키마</div>
+                        </div>
+                    </div>
+                    <div class="explanation">
+                        <h4>💡 해설</h4>
+                        <p>
+                            <strong>외개내!</strong> (외할머니 개가 내 집에)<br><br>
+                            외부 스키마 → 사용자 관점 (여러 개)<br>
+                            개념 스키마 → 전체 DB 구조 (1개)<br>
+                            내부 스키마 → 물리적 저장 (1개)
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Q2 -->
+                <div class="question-card">
+                    <div class="question-number">Question 2</div>
+                    <div class="question-text">
+                        데이터 모델링 절차를 순서대로 나열한 것은?
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')">
+                            <div class="option-label">①</div>
+                            <div>개념적 모델링 → 논리적 모델링 → 물리적 모델링</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">②</div>
+                            <div>물리적 모델링 → 논리적 모델링 → 개념적 모델링</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">③</div>
+                            <div>논리적 모델링 → 개념적 모델링 → 물리적 모델링</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">④</div>
+                            <div>개념적 모델링 → 물리적 모델링 → 논리적 모델링</div>
+                        </div>
+                    </div>
+                    <div class="explanation">
+                        <h4>💡 해설</h4>
+                        <p>
+                            <strong>개논물!</strong> (개울가에 논이랑 물이)<br><br>
+                            개념적 → 논리적 → 물리적<br>
+                            추상적 → 구체적으로 점점 상세화!
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Q3 -->
+                <div class="question-card">
+                    <div class="question-number">Question 3</div>
+                    <div class="question-text">
+                        데이터 모델의 구성 요소가 <strong>아닌 것</strong>은?
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">①</div>
+                            <div>Entity (엔터티)</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">②</div>
+                            <div>Attribute (속성)</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">③</div>
+                            <div>Relationship (관계)</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')">
+                            <div class="option-label">④</div>
+                            <div>Index (인덱스)</div>
+                        </div>
+                    </div>
+                    <div class="explanation">
+                        <h4>💡 해설</h4>
+                        <p>
+                            <strong>엔속관!</strong> (엔지니어가 속도로 관리)<br><br>
+                            Entity (엔터티)<br>
+                            Attribute (속성)<br>
+                            Relationship (관계)<br><br>
+                            인덱스는 물리적 모델링 단계에서 추가되는 것!
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Q4 -->
+                <div class="question-card">
+                    <div class="question-number">Question 4</div>
+                    <div class="question-text">
+                        물리적 형태가 없지만 관리해야 할 개념인 엔터티는?
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">①</div>
+                            <div>유형(Tangible) 엔터티</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')">
+                            <div class="option-label">②</div>
+                            <div>개념(Conceptual) 엔터티</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">③</div>
+                            <div>사건(Event) 엔터티</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">④</div>
+                            <div>중심(Main) 엔터티</div>
+                        </div>
+                    </div>
+                    <div class="explanation">
+                        <h4>💡 해설</h4>
+                        <p>
+                            <strong>유개사중!</strong> (유개 사려고 중국집)<br><br>
+                            유형: 물리적 형태 O (교수, 사원)<br>
+                            개념: 물리적 형태 X (수업, 조직) ✅<br>
+                            사건: 업무 발생 (주문, 입금)<br>
+                            중심: 기본 엔터티 (계약)
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Q5 -->
+                <div class="question-card">
+                    <div class="question-number">Question 5</div>
+                    <div class="question-text">
+                        논리적 데이터 모델링 단계에서 수행하는 작업이 <strong>아닌 것</strong>은?
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">①</div>
+                            <div>ERD 작성</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">②</div>
+                            <div>정규화 수행</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')">
+                            <div class="option-label">③</div>
+                            <div>인덱스 설계</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">④</div>
+                            <div>속성 정의</div>
+                        </div>
+                    </div>
+                    <div class="explanation">
+                        <h4>💡 해설</h4>
+                        <p>
+                            인덱스 설계는 <strong>물리적 모델링</strong> 단계!<br><br>
+                            논리적 모델링: ERD, 정규화, 속성/관계 정의<br>
+                            물리적 모델링: 테이블 생성, 인덱스 설계
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Q6 -->
+                <div class="question-card">
+                    <div class="question-number">Question 6</div>
+                    <div class="question-text">
+                        데이터 독립성 중 <strong>물리적 독립성</strong>에 대한 설명으로 옳은 것은?
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">①</div>
+                            <div>개념 스키마 변경 시 외부 스키마가 영향받지 않음</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')">
+                            <div class="option-label">②</div>
+                            <div>내부 스키마 변경 시 개념 스키마가 영향받지 않음</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">③</div>
+                            <div>외부 스키마 변경 시 개념 스키마가 영향받지 않음</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">④</div>
+                            <div>논리적 독립성보다 구현하기 어렵다</div>
+                        </div>
+                    </div>
+                    <div class="explanation">
+                        <h4>💡 해설</h4>
+                        <p>
+                            물리적 독립성: 내부(물리) → 개념(논리)<br>
+                            논리적 독립성: 개념(논리) → 외부(사용자)<br><br>
+                            물리적 독립성이 구현하기 더 쉬워요!
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Q7 -->
+                <div class="question-card">
+                    <div class="question-number">Question 7</div>
+                    <div class="question-text">
+                        개념 스키마에 대한 설명으로 <strong>틀린 것</strong>은?
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">①</div>
+                            <div>전체 데이터베이스의 논리적 구조를 정의한다</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">②</div>
+                            <div>하나의 데이터베이스에 하나만 존재한다</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')">
+                            <div class="option-label">③</div>
+                            <div>사용자마다 다른 개념 스키마를 가질 수 있다</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">④</div>
+                            <div>전체 스키마 또는 논리 스키마라고도 한다</div>
+                        </div>
+                    </div>
+                    <div class="explanation">
+                        <h4>💡 해설</h4>
+                        <p>
+                            개념 스키마는 <strong>하나만 존재</strong>!<br>
+                            사용자마다 다른 것은 <strong>외부 스키마</strong>예요.<br><br>
+                            외개내: 외(여러 개) 개(1개) 내(1개)
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Q8 -->
+                <div class="question-card">
+                    <div class="question-number">Question 8</div>
+                    <div class="question-text">
+                        외부 스키마를 구현하는 데 사용되는 SQL 객체는?
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">①</div>
+                            <div>Table</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')">
+                            <div class="option-label">②</div>
+                            <div>View</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">③</div>
+                            <div>Index</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">④</div>
+                            <div>Trigger</div>
+                        </div>
+                    </div>
+                    <div class="explanation">
+                        <h4>💡 해설</h4>
+                        <p>
+                            외부 스키마 = <strong>뷰(View)</strong>로 구현!<br><br>
+                            사용자마다 다른 화면을 보여주기 위해<br>
+                            가상 테이블인 뷰를 사용해요.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Q9 -->
+                <div class="question-card">
+                    <div class="question-number">Question 9</div>
+                    <div class="question-text">
+                        엔터티의 특징으로 <strong>틀린 것</strong>은?
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">①</div>
+                            <div>2개 이상의 인스턴스를 포함해야 한다</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">②</div>
+                            <div>2개 이상의 속성을 가져야 한다</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')">
+                            <div class="option-label">③</div>
+                            <div>하나의 속성만 가질 수 있다</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">④</div>
+                            <div>업무 프로세스에 이용되어야 한다</div>
+                        </div>
+                    </div>
+                    <div class="explanation">
+                        <h4>💡 해설</h4>
+                        <p>
+                            엔터티는 <strong>2개 이상의 속성</strong> 필요!<br><br>
+                            속성이 1개만 있으면 그건 엔터티가 아니라<br>
+                            다른 엔터티의 속성으로 표현해야 해요.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Q10 -->
+                <div class="question-card">
+                    <div class="question-number">Question 10</div>
+                    <div class="question-text">
+                        속성(Attribute)의 특징으로 <strong>옳은 것</strong>은?
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">①</div>
+                            <div>하나의 속성은 여러 개의 값을 가질 수 있다</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')">
+                            <div class="option-label">②</div>
+                            <div>더 이상 분해할 수 없는 최소 단위여야 한다</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">③</div>
+                            <div>엔터티를 유일하게 식별하는 속성을 속성값이라 한다</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')">
+                            <div class="option-label">④</div>
+                            <div>하나의 엔터티는 하나의 속성만 가질 수 있다</div>
+                        </div>
+                    </div>
+                    <div class="explanation">
+                        <h4>💡 해설</h4>
+                        <p>
+                            속성은 <strong>원자성</strong>을 가져야 해요!<br>
+                            = 더 이상 쪼갤 수 없는 최소 단위<br><br>
+                            예) "홍길동, 김철수" ❌<br>
+                            예) "홍길동" ✅
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 암기 카드 섹션 -->
+        <div id="flashcard" class="section">
+            <div class="webtoon-panel">
+                <h2 style="color: #667eea; margin-bottom: 20px; font-size: 2em; text-align: center;">🃏 핵심 암기 카드</h2>
+                <p style="color: #666; margin-bottom: 30px; text-align: center; font-size: 1.1em;">카드를 클릭해서 뒤집어보세요!</p>
+                
+                <div class="flashcard-grid">
+                    <!-- Card 1 -->
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front">
+                                <h3>외부 스키마</h3>
+                                <p>External Schema</p>
+                                <div class="hint">💡 클릭!</div>
+                            </div>
+                            <div class="flashcard-back">
+                                <h3>정의</h3>
+                                <p><strong>사용자 관점</strong>의 스키마<br>개별 사용자가 보는 DB</p>
+                                <div class="example">
+                                    서브 스키마<br>
+                                    뷰(View)로 구현<br>
+                                    <strong>여러 개 존재 가능</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 2 -->
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front">
+                                <h3>개념 스키마</h3>
+                                <p>Conceptual Schema</p>
+                                <div class="hint">💡 클릭!</div>
+                            </div>
+                            <div class="flashcard-back">
+                                <h3>정의</h3>
+                                <p><strong>전체 DB</strong>의<br>논리적 구조</p>
+                                <div class="example">
+                                    전체/논리 스키마<br>
+                                    모든 사용자 통합<br>
+                                    <strong>1개만 존재</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 3 -->
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front">
+                                <h3>내부 스키마</h3>
+                                <p>Internal Schema</p>
+                                <div class="hint">💡 클릭!</div>
+                            </div>
+                            <div class="flashcard-back">
+                                <h3>정의</h3>
+                                <p><strong>물리적 저장</strong><br>구조 정의</p>
+                                <div class="example">
+                                    디스크 저장 방법<br>
+                                    인덱스, 파일구조<br>
+                                    <strong>1개만 존재</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 4 -->
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front">
+                                <h3>개념적 모델링</h3>
+                                <p>Conceptual</p>
+                                <div class="hint">💡 클릭!</div>
+                            </div>
+                            <div class="flashcard-back">
+                                <h3>정의</h3>
+                                <p><strong>추상적</strong><br>큰 그림 그리기</p>
+                                <div class="example">
+                                    핵심 엔터티 도출<br>
+                                    DBMS 독립적<br>
+                                    업무 분석
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 5 -->
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front">
+                                <h3>논리적 모델링</h3>
+                                <p>Logical</p>
+                                <div class="hint">💡 클릭!</div>
+                            </div>
+                            <div class="flashcard-back">
+                                <h3>정의</h3>
+                                <p>속성, 관계를<br><strong>상세화</strong></p>
+                                <div class="example">
+                                    ERD 작성<br>
+                                    정규화 수행<br>
+                                    DBMS 독립적
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 6 -->
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front">
+                                <h3>물리적 모델링</h3>
+                                <p>Physical</p>
+                                <div class="hint">💡 클릭!</div>
+                            </div>
+                            <div class="flashcard-back">
+                                <h3>정의</h3>
+                                <p>실제 <strong>DBMS에<br>구현</strong></p>
+                                <div class="example">
+                                    테이블/컬럼 생성<br>
+                                    인덱스 설계<br>
+                                    DBMS 종속적
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 7 -->
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front">
+                                <h3>엔터티</h3>
+                                <p>Entity</p>
+                                <div class="hint">💡 클릭!</div>
+                            </div>
+                            <div class="flashcard-back">
+                                <h3>정의</h3>
+                                <p>업무와 관련된<br><strong>어떤 것</strong></p>
+                                <div class="example">
+                                    예) 학생, 과목<br>
+                                    2개 이상 인스턴스<br>
+                                    2개 이상 속성 필요
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 8 -->
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front">
+                                <h3>속성</h3>
+                                <p>Attribute</p>
+                                <div class="hint">💡 클릭!</div>
+                            </div>
+                            <div class="flashcard-back">
+                                <h3>정의</h3>
+                                <p>어떤 것이 갖는<br><strong>성격</strong></p>
+                                <div class="example">
+                                    예) 이름, 학점<br>
+                                    원자성 (최소 단위)<br>
+                                    하나의 값만 가능
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 9 -->
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front">
+                                <h3>관계</h3>
+                                <p>Relationship</p>
+                                <div class="hint">💡 클릭!</div>
+                            </div>
+                            <div class="flashcard-back">
+                                <h3>정의</h3>
+                                <p>어떤 것 간의<br><strong>관계</strong></p>
+                                <div class="example">
+                                    예) 수강하다<br>
+                                    1:1, 1:M, M:N<br>
+                                    필수/선택 관계
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 10 -->
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front">
+                                <h3>유형 엔터티</h3>
+                                <p>Tangible</p>
+                                <div class="hint">💡 클릭!</div>
+                            </div>
+                            <div class="flashcard-back">
+                                <h3>정의</h3>
+                                <p><strong>물리적 형태</strong><br>있는 엔터티</p>
+                                <div class="example">
+                                    교수, 강의실<br>
+                                    물품, 사원<br>
+                                    안정적, 지속적
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 11 -->
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front">
+                                <h3>개념 엔터티</h3>
+                                <p>Conceptual</p>
+                                <div class="hint">💡 클릭!</div>
+                            </div>
+                            <div class="flashcard-back">
+                                <h3>정의</h3>
+                                <p>물리적 형태 없지만<br><strong>관리 필요</strong></p>
+                                <div class="example">
+                                    수업, 조직<br>
+                                    보험상품<br>
+                                    추상적 개념
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 12 -->
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front">
+                                <h3>사건 엔터티</h3>
+                                <p>Event</p>
+                                <div class="hint">💡 클릭!</div>
+                            </div>
+                            <div class="flashcard-back">
+                                <h3>정의</h3>
+                                <p>업무 수행 시<br><strong>발생</strong></p>
+                                <div class="example">
+                                    주문, 수강신청<br>
+                                    입금, 미납<br>
+                                    자주 변경됨
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 13 -->
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front">
+                                <h3>중심 엔터티</h3>
+                                <p>Main</p>
+                                <div class="hint">💡 클릭!</div>
+                            </div>
+                            <div class="flashcard-back">
+                                <h3>정의</h3>
+                                <p><strong>기본</strong>이 되는<br>엔터티</p>
+                                <div class="example">
+                                    계약, 주문<br>
+                                    다른 엔터티와<br>
+                                    관계 많음
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 14 -->
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front">
+                                <h3>논리적 독립성</h3>
+                                <p>Logical</p>
+                                <div class="hint">💡 클릭!</div>
+                            </div>
+                            <div class="flashcard-back">
+                                <h3>정의</h3>
+                                <p>개념 스키마 변경<br>→ 외부 불변</p>
+                                <div class="example">
+                                    테이블 추가해도<br>
+                                    사용자 화면 안 바뀜<br>
+                                    <strong>구현 어려움</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 15 -->
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front">
+                                <h3>물리적 독립성</h3>
+                                <p>Physical</p>
+                                <div class="hint">💡 클릭!</div>
+                            </div>
+                            <div class="flashcard-back">
+                                <h3>정의</h3>
+                                <p>내부 스키마 변경<br>→ 개념 불변</p>
+                                <div class="example">
+                                    저장 방법 바꿔도<br>
+                                    논리 구조 안 바뀜<br>
+                                    <strong>구현 쉬움</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 문제 은행 섹션 -->
+        <div id="problems" class="section">
+            <div class="problem-bank">
+                <h2 style="color: #667eea; margin-bottom: 20px; font-size: 2em;">📝 실전 문제 은행</h2>
+                <p style="color: #666; margin-bottom: 30px; font-size: 1.1em;">시험에 자주 나오는 유형으로 연습하세요!</p>
+
+                <!-- Problem 1 -->
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                        <div class="question-number">실전 문제 1</div>
+                        <span class="difficulty-badge difficulty-easy">쉬움</span>
+                    </div>
+                    <div class="question-text">
+                        외부 스키마와 개념 스키마의 대응 관계를 정의하는 것은?
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')">
+                            <div class="option-label">①</div>
+                            <div>논리적 사상 (Logical Mapping)</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">②</div>
+                            <div>물리적 사상 (Physical Mapping)</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">③</div>
+                            <div>개념적 사상 (Conceptual Mapping)</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">④</div>
+                            <div>추상적 사상 (Abstract Mapping)</div>
+                        </div>
+                    </div>
+                    <div class="explanation">
+                        <h4>💡 해설</h4>
+                        <p>
+                            논리적 사상: 외부 ↔ 개념<br>
+                            물리적 사상: 개념 ↔ 내부<br><br>
+                            논리적 사상 = 논리적 독립성 보장
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Problem 2 -->
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                        <div class="question-number">실전 문제 2</div>
+                        <span class="difficulty-badge difficulty-medium">보통</span>
+                    </div>
+                    <div class="question-text">
+                        다음 중 엔터티가 반드시 가져야 할 특징이 <strong>아닌 것</strong>은?
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">①</div>
+                            <div>반드시 해당 업무에서 필요하고 관리하고자 하는 정보여야 함</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">②</div>
+                            <div>유일한 식별자에 의해 식별 가능해야 함</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')">
+                            <div class="option-label">③</div>
+                            <div>영속적으로 존재하는 인스턴스는 1개만 있어야 함</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">④</div>
+                            <div>반드시 속성이 있어야 함</div>
+                        </div>
+                    </div>
+                    <div class="explanation">
+                        <h4>💡 해설</h4>
+                        <p>
+                            엔터티는 <strong>2개 이상의 인스턴스</strong> 필요!<br><br>
+                            1개만 있으면 엔터티가 아니라<br>
+                            다른 엔터티의 속성으로 표현해야 해요.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Problem 3 -->
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                        <div class="question-number">실전 문제 3</div>
+                        <span class="difficulty-badge difficulty-medium">보통</span>
+                    </div>
+                    <div class="question-text">
+                        "주문, 수강신청, 입금" 등과 같이 업무 수행 과정에서 발생하는 엔터티는?
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">①</div>
+                            <div>유형(Tangible) 엔터티</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">②</div>
+                            <div>개념(Conceptual) 엔터티</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')">
+                            <div class="option-label">③</div>
+                            <div>사건(Event) 엔터티</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">④</div>
+                            <div>중심(Main) 엔터티</div>
+                        </div>
+                    </div>
+                    <div class="explanation">
+                        <h4>💡 해설</h4>
+                        <p>
+                            <strong>유개사중!</strong><br><br>
+                            사건(Event) 엔터티:<br>
+                            • 업무 수행 시 발생<br>
+                            • 주문, 입금, 수강신청<br>
+                            • 자주 변경됨
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Problem 4 -->
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                        <div class="question-number">실전 문제 4</div>
+                        <span class="difficulty-badge difficulty-hard">어려움</span>
+                    </div>
+                    <div class="question-text">
+                        다음 중 <strong>DBMS에 종속적</strong>인 모델링 단계는?
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">①</div>
+                            <div>개념적 모델링</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">②</div>
+                            <div>논리적 모델링</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')">
+                            <div class="option-label">③</div>
+                            <div>물리적 모델링</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">④</div>
+                            <div>개념적 + 논리적 모델링</div>
+                        </div>
+                    </div>
+                    <div class="explanation">
+                        <h4>💡 해설</h4>
+                        <p>
+                            물리적 모델링만 <strong>DBMS 종속적</strong>!<br><br>
+                            개념적/논리적: DBMS 독립적<br>
+                            물리적: Oracle, MySQL 등 DBMS마다 다름
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Problem 5 -->
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                        <div class="question-number">실전 문제 5</div>
+                        <span class="difficulty-badge difficulty-hard">어려움</span>
+                    </div>
+                    <div class="question-text">
+                        속성의 명명 규칙으로 <strong>틀린 것</strong>은?
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">①</div>
+                            <div>해당 업무에서 사용하는 이름을 부여한다</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">②</div>
+                            <div>서술식 속성명은 사용하지 않는다</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')">
+                            <div class="option-label">③</div>
+                            <div>약어 사용을 최대한 많이 사용한다</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">④</div>
+                            <div>전체 데이터 모델에서 유일성을 확보한다</div>
+                        </div>
+                    </div>
+                    <div class="explanation">
+                        <h4>💡 해설</h4>
+                        <p>
+                            속성 명명 규칙:<br>
+                            • 업무에서 사용하는 용어<br>
+                            • 서술식 피하기<br>
+                            • <strong>약어 사용 자제</strong> ✅<br>
+                            • 유일한 이름 사용
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Problem 6 -->
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                        <div class="question-number">실전 문제 6</div>
+                        <span class="difficulty-badge difficulty-medium">보통</span>
+                    </div>
+                    <div class="question-text">
+                        엔터티의 인스턴스에 대한 설명으로 <strong>옳은 것</strong>은?
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">①</div>
+                            <div>엔터티의 특성을 나타내는 항목이다</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')">
+                            <div class="option-label">②</div>
+                            <div>특정 시점에 DB에 실제 저장되어 있는 데이터의 값이다</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">③</div>
+                            <div>엔터티를 유일하게 구분하는 속성이다</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">④</div>
+                            <div>다른 엔터티와의 연결 관계이다</div>
+                        </div>
+                    </div>
+                    <div class="explanation">
+                        <h4>💡 해설</h4>
+                        <p>
+                            인스턴스 = 행(Row) = 튜플<br><br>
+                            예) 학생 엔터티의 인스턴스:<br>
+                            • 홍길동 (학번: 2024001)<br>
+                            • 김철수 (학번: 2024002)
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Problem 7 -->
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                        <div class="question-number">실전 문제 7</div>
+                        <span class="difficulty-badge difficulty-easy">쉬움</span>
+                    </div>
+                    <div class="question-text">
+                        ERD 작성과 정규화를 수행하는 데이터 모델링 단계는?
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">①</div>
+                            <div>개념적 데이터 모델링</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')">
+                            <div class="option-label">②</div>
+                            <div>논리적 데이터 모델링</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">③</div>
+                            <div>물리적 데이터 모델링</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">④</div>
+                            <div>추상적 데이터 모델링</div>
+                        </div>
+                    </div>
+                    <div class="explanation">
+                        <h4>💡 해설</h4>
+                        <p>
+                            <strong>개논물!</strong><br><br>
+                            논리적 모델링에서:<br>
+                            • ERD 작성 ✅<br>
+                            • 정규화 수행 ✅<br>
+                            • 속성/관계 정의
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Problem 8 -->
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                        <div class="question-number">실전 문제 8</div>
+                        <span class="difficulty-badge difficulty-hard">어려움</span>
+                    </div>
+                    <div class="question-text">
+                        속성의 특징으로 <strong>틀린 것</strong>은?
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">①</div>
+                            <div>업무에서 필요로 하는 인스턴스에서 관리하고자 하는 의미상 더 이상 분리되지 않는 최소 데이터 단위</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')">
+                            <div class="option-label">②</div>
+                            <div>하나의 엔터티는 2개 이상의 인스턴스의 집합이어야 함</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">③</div>
+                            <div>하나의 속성은 한 개의 속성값을 가진다</div>
+                        </div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')">
+                            <div class="option-label">④</div>
+                            <div>주식별자에 함하여 않는다 해도 유일성을 가져야 한다</div>
+                        </div>
+                    </div>
+                    <div class="explanation">
+                        <h4>💡 해설</h4>
+                        <p>
+                            "2개 이상의 인스턴스 집합"은<br>
+                            <strong>엔터티</strong>의 특징이에요!<br><br>
+                            속성의 특징:<br>
+                            • 최소 데이터 단위 (원자성)<br>
+                            • 한 개의 값만 가짐
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let webtoonCompleted = false;
+        let quizCorrect = 0;
+        let flashcardsFlipped = new Set();
+        let problemsSolved = 0;
+
+        // 스크롤 이벤트 (맨 위로 버튼)
+        window.addEventListener('scroll', function() {
+            const scrollTopBtn = document.getElementById('scrollTopBtn');
+            if (window.pageYOffset > 300) {
+                scrollTopBtn.classList.add('show');
+            } else {
+                scrollTopBtn.classList.remove('show');
+            }
+        });
+
+        // 맨 위로 스크롤
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        // 섹션으로 스크롤
+        function scrollToSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            const offset = 100; // 고정 네비게이션 높이
+            const elementPosition = section.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+            });
+
+            // 탭 활성화
+            showTab(sectionId);
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(tabName).classList.add('active');
+            
+            event.target?.classList.add('active');
+        }
+
+        function checkAnswer(element, isCorrect, section) {
+            const options = element.parentElement.querySelectorAll('.option');
+            const explanation = element.parentElement.nextElementSibling;
+            
+            if (element.classList.contains('disabled')) return;
+            
+            options.forEach(opt => opt.classList.add('disabled'));
+            
+            if (isCorrect) {
+                element.classList.add('correct');
+                if (section === 'quiz') quizCorrect++;
+                if (section === 'problems') problemsSolved++;
+            } else {
+                element.classList.add('incorrect');
+                options.forEach(opt => {
+                    if (opt.onclick.toString().includes('true')) {
+                        opt.classList.add('correct');
+                    }
+                });
+            }
+            
+            explanation.classList.add('show');
+            updateProgress();
+        }
+
+        function flipCard(card) {
+            card.classList.toggle('flipped');
+            const cardIndex = Array.from(card.parentElement.children).indexOf(card);
+            
+            if (card.classList.contains('flipped')) {
+                flashcardsFlipped.add(cardIndex);
+            }
+            
+            updateProgress();
+        }
+
+        function markWebtoonDone() {
+            if (!webtoonCompleted) {
+                webtoonCompleted = true;
+                updateProgress();
+                alert('🎉 웹툰 학습 완료! 퀴즈로 넘어가볼까요?');
+            }
+        }
+
+        function updateProgress() {
+            document.getElementById('webtoonDone').textContent = webtoonCompleted ? 1 : 0;
+            document.getElementById('quizScore').textContent = quizCorrect;
+            document.getElementById('flashcardsDone').textContent = flashcardsFlipped.size;
+            document.getElementById('problemsDone').textContent = problemsSolved;
+            
+            const total = 1 + 10 + 15 + 8;
+            const completed = (webtoonCompleted ? 1 : 0) + quizCorrect + flashcardsFlipped.size + problemsSolved;
+            const percentage = Math.round((completed / total) * 100);
+            
+            document.getElementById('progressBar').style.width = percentage + '%';
+            document.getElementById('progressBar').textContent = percentage + '%';
+            
+            localStorage.setItem('chapter1_v2_progress', JSON.stringify({
+                webtoonCompleted,
+                quizCorrect,
+                flashcardsFlipped: Array.from(flashcardsFlipped),
+                problemsSolved
+            }));
+        }
+
+        window.onload = function() {
+            const saved = localStorage.getItem('chapter1_v2_progress');
+            if (saved) {
+                const data = JSON.parse(saved);
+                webtoonCompleted = data.webtoonCompleted || false;
+                quizCorrect = data.quizCorrect || 0;
+                flashcardsFlipped = new Set(data.flashcardsFlipped || []);
+                problemsSolved = data.problemsSolved || 0;
+                updateProgress();
+            }
+        };
+    </script>
+</body>
+</html>

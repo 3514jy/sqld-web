@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQLD Chapter 19: PIVOT & 고급 집계</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding-top: 60px; padding-bottom: 20px; }
+.container { max-width: 1200px; margin: 0 auto; padding: 10px 20px; }
+.header { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; }
+.header h1 { color: #667eea; font-size: 2em; margin-bottom: 10px; }
+.chapter-badge { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px 30px; border-radius: 20px; display: inline-block; font-weight: bold; margin-bottom: 15px; }
+.webtoon-panel { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+.webtoon-title { font-size: 2em; color: #667eea; margin-bottom: 30px; text-align: center; font-weight: bold; }
+.comic-panel { background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%); border: 4px solid #667eea; border-radius: 20px; padding: 25px; margin-bottom: 25px; }
+.code-box { background: #2d2d2d; color: #f8f8f2; padding: 20px; border-radius: 10px; font-family: 'Courier New', monospace; margin: 15px 0; overflow-x: auto; font-size: 0.95em; }
+.memory-box { background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%); border: 5px solid #ffc107; border-radius: 20px; padding: 30px; margin: 30px 0; box-shadow: 0 10px 25px rgba(255, 193, 7, 0.3); }
+.memory-box h3 { color: #856404; font-size: 1.8em; margin-bottom: 20px; text-align: center; }
+.memory-keyword { font-size: 3em; font-weight: bold; color: #ff6b6b; text-align: center; margin: 20px 0; text-shadow: 3px 3px 6px rgba(0,0,0,0.1); letter-spacing: 5px; }
+.exam-point { background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%); color: white; padding: 25px; border-radius: 15px; margin: 25px 0; box-shadow: 0 10px 25px rgba(255, 107, 107, 0.3); }
+.exam-point h3 { font-size: 1.6em; margin-bottom: 15px; }
+.exam-point ul { margin-left: 25px; line-height: 2; }
+.exam-point li { margin: 10px 0; font-size: 1.1em; }
+.highlight { background: linear-gradient(transparent 60%, #ffd89b 60%); font-weight: bold; padding: 2px 6px; }
+.complete-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 40px; border-radius: 25px; font-size: 1.2em; cursor: pointer; margin-top: 20px; width: 100%; font-weight: bold; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header"><div class="chapter-badge">📚 Chapter 19</div><h1>PIVOT & 고급 집계</h1><p style="color: #666; margin-top: 10px; font-size: 1.1em;">데이터 변환의 고급 기법!</p></div>
+<div class="webtoon-panel"><div class="webtoon-title">🎬 PIVOT & 고급 집계!</div>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; font-size: 1.5em; margin-bottom: 15px;">PIVOT이란?</h3>
+<p style="font-size: 1.1em; line-height: 1.8; color: #333;">
+<span class="highlight">행을 열로 회전!</span><br><br>
+세로 데이터 → 가로 데이터 변환
+</p>
+<div class="code-box">-- 기본 구조
+SELECT *
+FROM 테이블
+PIVOT (
+    집계함수(집계컬럼)
+    FOR 피벗컬럼
+    IN (값1, 값2, ...)
+);
+
+-- 예시: 부서별 직급별 급여 합계
+SELECT *
+FROM EMP
+PIVOT (
+    SUM(SALARY)
+    FOR JOB
+    IN ('사원', '대리', '과장')
+);</div>
+</div>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; font-size: 1.5em; margin-bottom: 15px;">UNPIVOT - 역변환!</h3>
+<p style="font-size: 1.1em; line-height: 1.8; color: #333;">
+<span class="highlight">열을 행으로 회전!</span><br><br>
+가로 데이터 → 세로 데이터 변환
+</p>
+<div class="code-box">-- 기본 구조
+SELECT *
+FROM 테이블
+UNPIVOT (
+    값컬럼
+    FOR 이름컬럼
+    IN (컬럼1, 컬럼2, ...)
+);</div>
+</div>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; font-size: 1.5em; margin-bottom: 15px;">ROLLUP - 소계!</h3>
+<p style="font-size: 1.1em; line-height: 1.8; color: #333; margin-bottom: 15px;">
+<strong>계층별 소계와 총계 자동 생성!</strong>
+</p>
+<div class="code-box">-- 부서별, 직급별 소계 + 총계
+SELECT 
+    DEPT, 
+    JOB, 
+    SUM(SALARY)
+FROM EMP
+GROUP BY ROLLUP(DEPT, JOB);
+
+-- 결과 예시:
+-- 개발, 사원, 1000
+-- 개발, 대리, 1500
+-- 개발, NULL, 2500  ← 개발부 소계
+-- 영업, 사원, 1200
+-- 영업, NULL, 1200  ← 영업부 소계
+-- NULL, NULL, 3700  ← 전체 총계</div>
+</div>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; font-size: 1.5em; margin-bottom: 15px;">CUBE - 모든 조합!</h3>
+<p style="font-size: 1.1em; line-height: 1.8; color: #333; margin-bottom: 15px;">
+<strong>모든 가능한 조합의 소계 생성!</strong>
+</p>
+<div class="code-box">-- 모든 조합의 소계
+SELECT 
+    DEPT, 
+    JOB, 
+    SUM(SALARY)
+FROM EMP
+GROUP BY CUBE(DEPT, JOB);
+
+-- ROLLUP보다 더 많은 결과!
+-- (DEPT, JOB), (DEPT, NULL), 
+-- (NULL, JOB), (NULL, NULL)</div>
+<div style="margin-top: 20px; padding: 20px; background: #fff3cd; border-radius: 10px;">
+<h4 style="color: #856404; margin-bottom: 10px;">🔍 ROLLUP vs CUBE</h4>
+<p style="color: #333; line-height: 1.8;">
+<strong>ROLLUP:</strong> 계층 구조 (부서→직급)<br>
+<strong>CUBE:</strong> 모든 조합 (부서별, 직급별, 전체)
+</p>
+</div>
+</div>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; font-size: 1.5em; margin-bottom: 15px;">GROUPING SETS - 원하는 조합만!</h3>
+<p style="font-size: 1.1em; line-height: 1.8; color: #333; margin-bottom: 15px;">
+<strong>원하는 그룹만 선택!</strong>
+</p>
+<div class="code-box">-- 부서별, 직급별 각각 집계 (조합 X)
+SELECT 
+    DEPT, 
+    JOB, 
+    SUM(SALARY)
+FROM EMP
+GROUP BY GROUPING SETS(DEPT, JOB);
+
+-- 여러 조합 지정
+GROUP BY GROUPING SETS(
+    (DEPT, JOB), 
+    (DEPT), 
+    ()
+);</div>
+</div>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; font-size: 1.5em; margin-bottom: 15px;">GROUPING 함수</h3>
+<p style="font-size: 1.1em; line-height: 1.8; color: #333; margin-bottom: 15px;">
+<strong>소계/총계 행 구분!</strong>
+</p>
+<div class="code-box">-- GROUPING 함수로 소계 구분
+SELECT 
+    DEPT,
+    JOB,
+    SUM(SALARY),
+    GROUPING(DEPT) AS GRP_DEPT,
+    GROUPING(JOB) AS GRP_JOB
+FROM EMP
+GROUP BY ROLLUP(DEPT, JOB);
+
+-- CASE와 함께 사용
+SELECT 
+    CASE 
+        WHEN GROUPING(DEPT) = 1 
+        THEN '전체' 
+        ELSE DEPT 
+    END AS 부서,
+    SUM(SALARY)
+FROM EMP
+GROUP BY ROLLUP(DEPT);</div>
+</div>
+
+<div class="memory-box">
+<h3>🎯 고급 집계 암기법!</h3>
+<div class="memory-keyword">피롤큐그</div>
+<div style="font-size: 1.4em; text-align: center; color: #495057; font-weight: bold; margin: 20px 0;">
+🎲 "피자 롤 큐브 그릴!"
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 25px;">
+<div style="background: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+<div style="font-size: 2.5em; font-weight: bold; color: #667eea; margin-bottom: 10px;">피</div>
+<div style="font-size: 1em; color: #495057; font-weight: bold;">PIVOT<br>행→열</div>
+</div>
+<div style="background: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+<div style="font-size: 2.5em; font-weight: bold; color: #667eea; margin-bottom: 10px;">롤</div>
+<div style="font-size: 1em; color: #495057; font-weight: bold;">ROLLUP<br>소계</div>
+</div>
+<div style="background: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+<div style="font-size: 2.5em; font-weight: bold; color: #667eea; margin-bottom: 10px;">큐</div>
+<div style="font-size: 1em; color: #495057; font-weight: bold;">CUBE<br>모든조합</div>
+</div>
+<div style="background: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+<div style="font-size: 2.5em; font-weight: bold; color: #667eea; margin-bottom: 10px;">그</div>
+<div style="font-size: 1em; color: #495057; font-weight: bold;">GROUPING SETS<br>선택조합</div>
+</div>
+</div>
+</div>
+
+<div class="exam-point">
+<h3>🎯 시험 필수 암기!</h3>
+<ul>
+<li><strong>피롤큐그</strong> 암기!</li>
+<li>PIVOT = 행을 열로</li>
+<li>UNPIVOT = 열을 행으로</li>
+<li>ROLLUP = 계층별 소계 (순서 중요!)</li>
+<li>CUBE = 모든 조합 소계</li>
+<li>GROUPING SETS = 원하는 조합만</li>
+<li>GROUPING(컬럼) = 소계면 1, 아니면 0</li>
+<li>ROLLUP(A, B) ≠ ROLLUP(B, A)</li>
+</ul>
+</div>
+
+<button onclick="alert('🎉 전체 완료!')" class="complete-btn">🎉 전체 19개 챕터 완료!</button>
+</div>
+</div>
+</body>
+</html>

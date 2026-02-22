@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQLD Chapter 15: 윈도우 함수</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding-top: 60px; padding-bottom: 20px; }
+.fixed-nav { position: fixed; top: 0; left: 0; right: 0; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000; padding: 10px 15px; }
+.nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+.nav-title { font-size: 1.1em; font-weight: bold; color: #667eea; }
+.nav-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+.nav-btn { padding: 6px 12px; background: #f8f9fa; border: 2px solid #667eea; border-radius: 20px; cursor: pointer; font-size: 0.85em; font-weight: bold; color: #667eea; transition: all 0.3s; }
+.nav-btn:hover, .nav-btn.active { background: #667eea; color: white; }
+.scroll-to-top { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 5px 20px rgba(0,0,0,0.3); z-index: 999; opacity: 0; transition: opacity 0.3s; font-size: 2em; color: white; }
+.scroll-to-top.show { opacity: 1; }
+.container { max-width: 1200px; margin: 0 auto; padding: 10px 20px; }
+.header { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; }
+.header h1 { color: #667eea; font-size: 2em; margin-bottom: 10px; }
+.chapter-badge { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px 30px; border-radius: 20px; display: inline-block; font-weight: bold; margin-bottom: 15px; }
+.progress-section { background: white; border-radius: 20px; padding: 25px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+.progress-bar { height: 35px; background: #e0e0e0; border-radius: 20px; overflow: hidden; margin: 20px 0; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); transition: width 0.5s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.1em; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-top: 20px; }
+.stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 15px; text-align: center; }
+.stat-number { font-size: 2.2em; font-weight: bold; margin: 10px 0; }
+.tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; background: white; padding: 15px; border-radius: 15px; margin-bottom: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+.tab { padding: 15px 20px; background: #f8f9fa; border: none; border-radius: 10px; cursor: pointer; font-size: 1em; font-weight: bold; transition: all 0.3s; color: #666; text-align: center; }
+.tab:hover { background: #e9ecef; }
+.tab.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+.section { display: none; }
+.section.active { display: block; }
+.webtoon-panel { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+.webtoon-title { font-size: 2em; color: #667eea; margin-bottom: 30px; text-align: center; font-weight: bold; }
+.comic-panel { background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%); border: 4px solid #667eea; border-radius: 20px; padding: 25px; margin-bottom: 25px; }
+.character-avatar { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 3.5em; box-shadow: 0 5px 15px rgba(0,0,0,0.2); margin: 0 auto 20px; }
+.avatar-student { background: linear-gradient(135deg, #ffd89b 0%, #ff9a9e 100%); }
+.avatar-teacher { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+.character-text { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+.character-name { font-weight: bold; color: #667eea; margin-bottom: 10px; font-size: 1.1em; }
+.character-speech { font-size: 1.1em; line-height: 1.8; color: #333; }
+.code-box { background: #2d2d2d; color: #f8f8f2; padding: 20px; border-radius: 10px; font-family: 'Courier New', monospace; margin: 15px 0; overflow-x: auto; font-size: 0.95em; }
+.memory-box { background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%); border: 5px solid #ffc107; border-radius: 20px; padding: 30px; margin: 30px 0; box-shadow: 0 10px 25px rgba(255, 193, 7, 0.3); }
+.memory-box h3 { color: #856404; font-size: 1.8em; margin-bottom: 20px; text-align: center; }
+.memory-keyword { font-size: 3em; font-weight: bold; color: #ff6b6b; text-align: center; margin: 20px 0; text-shadow: 3px 3px 6px rgba(0,0,0,0.1); letter-spacing: 5px; }
+.memory-story { font-size: 1.4em; text-align: center; color: #495057; font-weight: bold; margin: 20px 0; }
+.highlight { background: linear-gradient(transparent 60%, #ffd89b 60%); font-weight: bold; padding: 2px 6px; }
+.exam-point { background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%); color: white; padding: 25px; border-radius: 15px; margin: 25px 0; box-shadow: 0 10px 25px rgba(255, 107, 107, 0.3); }
+.exam-point h3 { font-size: 1.6em; margin-bottom: 15px; }
+.exam-point ul { margin-left: 25px; line-height: 2; }
+.exam-point li { margin: 10px 0; font-size: 1.1em; }
+.quiz-container, .problem-bank { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+.question-card { background: #f8f9fa; border-radius: 20px; padding: 25px; margin-bottom: 25px; }
+.question-number { color: #667eea; font-weight: bold; font-size: 1.2em; margin-bottom: 15px; }
+.question-text { font-size: 1.25em; color: #333; margin-bottom: 20px; line-height: 1.8; }
+.options { display: grid; gap: 12px; }
+.option { background: white; border: 3px solid #e0e0e0; border-radius: 15px; padding: 15px 20px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 15px; font-size: 1.05em; }
+.option:hover { border-color: #667eea; transform: translateX(5px); }
+.option-label { width: 35px; height: 35px; border-radius: 50%; background: #667eea; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
+.option.correct { border-color: #28a745; background: #d4edda; }
+.option.correct .option-label { background: #28a745; }
+.option.incorrect { border-color: #dc3545; background: #f8d7da; }
+.option.incorrect .option-label { background: #dc3545; }
+.option.disabled { cursor: not-allowed; opacity: 0.7; }
+.explanation { background: #e7f3ff; border-left: 6px solid #2196F3; padding: 20px; margin-top: 20px; border-radius: 10px; display: none; line-height: 1.8; }
+.explanation.show { display: block; }
+.explanation h4 { color: #1976D2; margin-bottom: 15px; font-size: 1.3em; }
+.flashcard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-top: 30px; }
+.flashcard { height: 280px; perspective: 1000px; cursor: pointer; }
+.flashcard-inner { position: relative; width: 100%; height: 100%; transition: transform 0.8s; transform-style: preserve-3d; }
+.flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
+.flashcard-front, .flashcard-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 20px; padding: 30px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+.flashcard-front { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+.flashcard-front h3 { font-size: 1.8em; margin-bottom: 15px; }
+.flashcard-back { background: white; transform: rotateY(180deg); }
+.flashcard-back h3 { color: #667eea; margin-bottom: 15px; font-size: 1.4em; }
+.difficulty-badge { display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 0.9em; font-weight: bold; }
+.difficulty-easy { background: #d4edda; color: #155724; }
+.difficulty-medium { background: #fff3cd; color: #856404; }
+.difficulty-hard { background: #f8d7da; color: #721c24; }
+.complete-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 40px; border-radius: 25px; font-size: 1.2em; cursor: pointer; margin-top: 20px; width: 100%; font-weight: bold; }
+@media (max-width: 768px) { body { padding-top: 100px; } .flashcard-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="fixed-nav"><div class="nav-container"><div class="nav-title">📚 Chapter 15: 윈도우 함수</div><div class="nav-buttons"><button class="nav-btn" onclick="scrollToSection('webtoon')">🎬 웹툰</button><button class="nav-btn" onclick="scrollToSection('quiz')">🎯 퀴즈</button><button class="nav-btn" onclick="scrollToSection('flashcard')">🃏 암기카드</button><button class="nav-btn" onclick="scrollToSection('problems')">📝 문제</button></div></div></div>
+<div class="scroll-to-top" id="scrollTopBtn" onclick="scrollToTop()">↑</div>
+<div class="container">
+<div class="header"><div class="chapter-badge">📚 Chapter 15</div><h1>윈도우 함수 (Window Function)</h1><p style="color: #666; margin-top: 10px; font-size: 1.1em;">행간 관계 정의!</p></div>
+<div class="progress-section"><h2 style="color: #667eea; margin-bottom: 15px;">📊 학습 진행도</h2><div class="progress-bar"><div class="progress-fill" id="progressBar" style="width: 0%;">0%</div></div><div class="stats-grid"><div class="stat-card"><div style="font-size: 0.9em;">웹툰</div><div class="stat-number" id="webtoonDone">0</div><div style="font-size: 0.9em;">/ 1</div></div><div class="stat-card"><div style="font-size: 0.9em;">퀴즈</div><div class="stat-number" id="quizScore">0</div><div style="font-size: 0.9em;">/ 7</div></div><div class="stat-card"><div style="font-size: 0.9em;">암기카드</div><div class="stat-number" id="flashcardsDone">0</div><div style="font-size: 0.9em;">/ 8</div></div><div class="stat-card"><div style="font-size: 0.9em;">문제</div><div class="stat-number" id="problemsDone">0</div><div style="font-size: 0.9em;">/ 8</div></div></div></div>
+<div class="tabs"><button class="tab active" onclick="showTab('webtoon')">🎬 웹툰</button><button class="tab" onclick="showTab('quiz')">🎯 퀴즈</button><button class="tab" onclick="showTab('flashcard')">🃏 암기카드</button><button class="tab" onclick="showTab('problems')">📝 문제</button></div>
+
+<div id="webtoon" class="section active"><div class="webtoon-panel"><div class="webtoon-title">🎬 윈도우 함수!</div>
+<div class="comic-panel"><div class="character-avatar avatar-student">🧑‍💻</div><div class="character-text"><div class="character-name">수험생</div><div class="character-speech">윈도우 함수가 뭔가요?</div></div></div>
+<div class="comic-panel"><div class="character-avatar avatar-teacher">👨‍🏫</div><div class="character-text"><div class="character-name">SQLD 전문가</div><div class="character-speech">윈도우 함수는 <span class="highlight">행과 행 간의 관계를 정의</span>하는 함수예요!<br><br>GROUP BY 없이도 집계 가능!<br><br><strong>기본 구조:</strong></div></div><div class="code-box">함수명() OVER (
+    PARTITION BY 컬럼  -- 그룹화 (선택)
+    ORDER BY 컬럼      -- 정렬 (필수)
+)</div></div>
+<div class="comic-panel"><div class="character-avatar avatar-teacher">👨‍🏫</div><div class="character-text"><div class="character-name">SQLD 전문가</div><div class="character-speech"><strong>1. 순위 함수</strong></div></div><div class="code-box">-- ROW_NUMBER: 1, 2, 3, 4 (순서대로)
+SELECT 
+    NAME, 
+    SALARY,
+    ROW_NUMBER() OVER (ORDER BY SALARY DESC) AS RN
+FROM EMP;
+
+-- RANK: 1, 2, 2, 4 (동일 순위, 다음 건너뜀)
+SELECT 
+    NAME, 
+    SALARY,
+    RANK() OVER (ORDER BY SALARY DESC) AS RANK
+FROM EMP;
+
+-- DENSE_RANK: 1, 2, 2, 3 (동일 순위, 연속)
+SELECT 
+    NAME, 
+    SALARY,
+    DENSE_RANK() OVER (ORDER BY SALARY DESC) AS DRANK
+FROM EMP;</div></div>
+<div class="comic-panel"><div class="character-avatar avatar-teacher">👨‍🏫</div><div class="character-text"><div class="character-name">SQLD 전문가</div><div class="character-speech"><strong>2. 집계 함수</strong><br>GROUP BY 없이 사용!</div></div><div class="code-box">-- 부서별 평균 급여 (각 행마다 표시)
+SELECT 
+    NAME, 
+    DEPT, 
+    SALARY,
+    AVG(SALARY) OVER (PARTITION BY DEPT) AS 부서평균
+FROM EMP;
+
+-- 누적 합계
+SELECT 
+    NAME, 
+    SALARY,
+    SUM(SALARY) OVER (ORDER BY NAME) AS 누적합계
+FROM EMP;</div></div>
+<div class="comic-panel"><div class="character-avatar avatar-teacher">👨‍🏫</div><div class="character-text"><div class="character-name">SQLD 전문가</div><div class="character-speech"><strong>3. 행 순서 함수</strong></div></div><div class="code-box">-- LAG: 이전 행 값
+SELECT 
+    NAME, 
+    SALARY,
+    LAG(SALARY, 1, 0) OVER (ORDER BY NAME) AS 이전급여
+FROM EMP;
+
+-- LEAD: 다음 행 값
+SELECT 
+    NAME, 
+    SALARY,
+    LEAD(SALARY, 1, 0) OVER (ORDER BY NAME) AS 다음급여
+FROM EMP;
+
+-- FIRST_VALUE: 첫 번째 값
+SELECT 
+    NAME, 
+    SALARY,
+    FIRST_VALUE(SALARY) OVER (ORDER BY SALARY DESC) AS 최고급여
+FROM EMP;</div></div>
+<div class="comic-panel"><div class="character-avatar avatar-teacher">👨‍🏫</div><div class="character-text"><div class="character-name">SQLD 전문가</div><div class="character-speech"><strong>4. 비율 함수</strong></div></div><div class="code-box">-- NTILE(n): n등분
+SELECT NAME, SALARY,
+       NTILE(4) OVER (ORDER BY SALARY DESC) AS 분위
+FROM EMP;
+
+-- RATIO_TO_REPORT: 비율
+SELECT NAME, SALARY,
+       RATIO_TO_REPORT(SALARY) OVER () AS 급여비율
+FROM EMP;</div></div>
+<div class="memory-box"><h3>🎯 순위 함수 암기법!</h3><div class="memory-keyword">로랭덴</div><div class="memory-story">🏆 "로켓 랭킹 덴마크!"</div><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 25px;"><div style="background: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1);"><div style="font-size: 2.5em; font-weight: bold; color: #667eea; margin-bottom: 10px;">로</div><div style="font-size: 1em; color: #495057; font-weight: bold;">ROW_NUMBER<br>1, 2, 3, 4</div></div><div style="background: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1);"><div style="font-size: 2.5em; font-weight: bold; color: #667eea; margin-bottom: 10px;">랭</div><div style="font-size: 1em; color: #495057; font-weight: bold;">RANK<br>1, 2, 2, 4</div></div><div style="background: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1);"><div style="font-size: 2.5em; font-weight: bold; color: #667eea; margin-bottom: 10px;">덴</div><div style="font-size: 1em; color: #495057; font-weight: bold;">DENSE_RANK<br>1, 2, 2, 3</div></div></div></div>
+<div class="exam-point"><h3>🎯 시험 필수 암기!</h3><ul><li><strong>로랭덴</strong> 암기!</li><li>OVER 절 필수!</li><li>PARTITION BY = 그룹화</li><li>ORDER BY = 정렬 (필수)</li><li>ROW_NUMBER = 1,2,3,4</li><li>RANK = 1,2,2,4 (건너뜀)</li><li>DENSE_RANK = 1,2,2,3 (연속)</li><li>LAG = 이전 행</li><li>LEAD = 다음 행</li><li>GROUP BY 없어도 집계 가능!</li></ul></div>
+<button onclick="markWebtoonDone()" class="complete-btn">🎉 전체 완료!</button></div></div>
+
+<div id="quiz" class="section"><div class="quiz-container"><h2 style="color: #667eea; text-align: center; font-size: 2em; margin-bottom: 30px;">🎯 퀴즈</h2>
+<div class="question-card"><div class="question-number">Q1</div><div class="question-text">윈도우 함수의 필수 절은?</div><div class="options"><div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">①</div><div>OVER</div></div><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">②</div><div>PARTITION BY</div></div><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">③</div><div>GROUP BY</div></div><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>HAVING</div></div></div><div class="explanation"><h4>💡 해설</h4><p>OVER 필수!</p></div></div>
+<div class="question-card"><div class="question-number">Q2</div><div class="question-text">1,2,3,4로 순위를 매기는 함수는?</div><div class="options"><div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">①</div><div>ROW_NUMBER</div></div><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">②</div><div>RANK</div></div><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">③</div><div>DENSE_RANK</div></div><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>NTILE</div></div></div><div class="explanation"><h4>💡 해설</h4><p>ROW_NUMBER = 1,2,3,4!</p></div></div>
+<div class="question-card"><div class="question-number">Q3</div><div class="question-text">1,2,2,4로 순위를 매기는 함수는?</div><div class="options"><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">①</div><div>ROW_NUMBER</div></div><div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">②</div><div>RANK</div></div><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">③</div><div>DENSE_RANK</div></div><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>NTILE</div></div></div><div class="explanation"><h4>💡 해설</h4><p>RANK = 1,2,2,4 (건너뜀)!</p></div></div>
+<div class="question-card"><div class="question-number">Q4</div><div class="question-text">1,2,2,3으로 순위를 매기는 함수는?</div><div class="options"><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">①</div><div>ROW_NUMBER</div></div><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">②</div><div>RANK</div></div><div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">③</div><div>DENSE_RANK</div></div><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>NTILE</div></div></div><div class="explanation"><h4>💡 해설</h4><p>DENSE_RANK = 1,2,2,3 (연속)!</p></div></div>
+<div class="question-card"><div class="question-number">Q5</div><div class="question-text">이전 행 값을 가져오는 함수는?</div><div class="options"><div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">①</div><div>LAG</div></div><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">②</div><div>LEAD</div></div><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">③</div><div>FIRST_VALUE</div></div><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>LAST_VALUE</div></div></div><div class="explanation"><h4>💡 해설</h4><p>LAG = 이전!</p></div></div>
+<div class="question-card"><div class="question-number">Q6</div><div class="question-text">다음 행 값을 가져오는 함수는?</div><div class="options"><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">①</div><div>LAG</div></div><div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">②</div><div>LEAD</div></div><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">③</div><div>FIRST_VALUE</div></div><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>LAST_VALUE</div></div></div><div class="explanation"><h4>💡 해설</h4><p>LEAD = 다음!</p></div></div>
+<div class="question-card"><div class="question-number">Q7</div><div class="question-text">PARTITION BY의 역할은?</div><div class="options"><div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">①</div><div>그룹화</div></div><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">②</div><div>정렬</div></div><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">③</div><div>필터링</div></div><div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>조인</div></div></div><div class="explanation"><h4>💡 해설</h4><p>PARTITION BY = 그룹화!</p></div></div>
+</div></div>
+
+<div id="flashcard" class="section"><div class="webtoon-panel"><h2 style="color: #667eea; margin-bottom: 20px; font-size: 2em; text-align: center;">🃏 암기 카드</h2><div class="flashcard-grid">
+<div class="flashcard" onclick="flipCard(this)"><div class="flashcard-inner"><div class="flashcard-front"><h3>윈도우 함수</h3></div><div class="flashcard-back"><h3>정의</h3><p>행간 관계 정의<br>GROUP BY 없이 집계</p></div></div></div>
+<div class="flashcard" onclick="flipCard(this)"><div class="flashcard-inner"><div class="flashcard-front"><h3>ROW_NUMBER</h3></div><div class="flashcard-back"><h3>순위</h3><p>1, 2, 3, 4<br>순서대로</p></div></div></div>
+<div class="flashcard" onclick="flipCard(this)"><div class="flashcard-inner"><div class="flashcard-front"><h3>RANK</h3></div><div class="flashcard-back"><h3>순위</h3><p>1, 2, 2, 4<br>동일 순위, 건너뜀</p></div></div></div>
+<div class="flashcard" onclick="flipCard(this)"><div class="flashcard-inner"><div class="flashcard-front"><h3>DENSE_RANK</h3></div><div class="flashcard-back"><h3>순위</h3><p>1, 2, 2, 3<br>동일 순위, 연속</p></div></div></div>
+<div class="flashcard" onclick="flipCard(this)"><div class="flashcard-inner"><div class="flashcard-front"><h3>LAG</h3></div><div class="flashcard-back"><h3>행 순서</h3><p>이전 행 값</p></div></div></div>
+<div class="flashcard" onclick="flipCard(this)"><div class="flashcard-inner"><div class="flashcard-front"><h3>LEAD</h3></div><div class="flashcard-back"><h3>행 순서</h3><p>다음 행 값</p></div></div></div>
+<div class="flashcard" onclick="flipCard(this)"><div class="flashcard-inner"><div class="flashcard-front"><h3>PARTITION BY</h3></div><div class="flashcard-back"><h3>절</h3><p>그룹화<br>(선택사항)</p></div></div></div>
+<div class="flashcard" onclick="flipCard(this)"><div class="flashcard-inner"><div class="flashcard-front"><h3>로랭덴</h3></div><div class="flashcard-back"><h3>암기법</h3><p>ROW_NUMBER<br>RANK<br>DENSE_RANK</p></div></div></div>
+</div></div></div>
+
+<div id="problems" class="section"><div class="problem-bank"><h2 style="color: #667eea; margin-bottom: 20px; font-size: 2em;">📝 실전 문제</h2>
+<div class="question-card"><div style="display: flex; justify-content: space-between; margin-bottom: 15px;"><div class="question-number">실전 1</div><span class="difficulty-badge difficulty-easy">쉬움</span></div><div class="question-text">윈도우 함수의 필수 절은?</div><div class="options"><div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">①</div><div>OVER</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">②</div><div>PARTITION BY</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>ORDER BY</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>WHERE</div></div></div><div class="explanation"><h4>💡 해설</h4><p>OVER 절 필수!</p></div></div>
+<div class="question-card"><div style="display: flex; justify-content: space-between; margin-bottom: 15px;"><div class="question-number">실전 2</div><span class="difficulty-badge difficulty-medium">보통</span></div><div class="question-text">급여 상위 3명을 조회하려면?</div><div class="options"><div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">①</div><div>ROW_NUMBER() OVER (ORDER BY SALARY DESC) <= 3</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">②</div><div>RANK = 3</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>GROUP BY SALARY</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>TOP 3</div></div></div><div class="explanation"><h4>💡 해설</h4><p>ROW_NUMBER 사용!</p></div></div>
+<div class="question-card"><div style="display: flex; justify-content: space-between; margin-bottom: 15px;"><div class="question-number">실전 3</div><span class="difficulty-badge difficulty-easy">쉬움</span></div><div class="question-text">부서별로 그룹화하려면?</div><div class="options"><div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">①</div><div>PARTITION BY DEPT</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">②</div><div>GROUP BY DEPT</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>ORDER BY DEPT</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>WHERE DEPT</div></div></div><div class="explanation"><h4>💡 해설</h4><p>PARTITION BY = 그룹화!</p></div></div>
+<div class="question-card"><div style="display: flex; justify-content: space-between; margin-bottom: 15px;"><div class="question-number">실전 4</div><span class="difficulty-badge difficulty-medium">보통</span></div><div class="question-text">동일 순위 다음을 건너뛰는 함수는?</div><div class="options"><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">①</div><div>ROW_NUMBER</div></div><div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">②</div><div>RANK</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>DENSE_RANK</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>NTILE</div></div></div><div class="explanation"><h4>💡 해설</h4><p>RANK = 1,2,2,4!</p></div></div>
+<div class="question-card"><div style="display: flex; justify-content: space-between; margin-bottom: 15px;"><div class="question-number">실전 5</div><span class="difficulty-badge difficulty-hard">어려움</span></div><div class="question-text">이전 행과의 급여 차이를 구하려면?</div><div class="options"><div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">①</div><div>SALARY - LAG(SALARY)</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">②</div><div>SALARY - LEAD(SALARY)</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>FIRST_VALUE - SALARY</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>RANK - 1</div></div></div><div class="explanation"><h4>💡 해설</h4><p>LAG = 이전 행!</p></div></div>
+<div class="question-card"><div style="display: flex; justify-content: space-between; margin-bottom: 15px;"><div class="question-number">실전 6</div><span class="difficulty-badge difficulty-medium">보통</span></div><div class="question-text">연속된 순위를 매기는 함수는?</div><div class="options"><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">①</div><div>ROW_NUMBER</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">②</div><div>RANK</div></div><div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">③</div><div>DENSE_RANK</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>NTILE</div></div></div><div class="explanation"><h4>💡 해설</h4><p>DENSE_RANK = 1,2,2,3!</p></div></div>
+<div class="question-card"><div style="display: flex; justify-content: space-between; margin-bottom: 15px;"><div class="question-number">실전 7</div><span class="difficulty-badge difficulty-easy">쉬움</span></div><div class="question-text">다음 행 값을 가져오는 함수는?</div><div class="options"><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">①</div><div>LAG</div></div><div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">②</div><div>LEAD</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>FIRST_VALUE</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>LAST_VALUE</div></div></div><div class="explanation"><h4>💡 해설</h4><p>LEAD = 다음!</p></div></div>
+<div class="question-card"><div style="display: flex; justify-content: space-between; margin-bottom: 15px;"><div class="question-number">실전 8</div><span class="difficulty-badge difficulty-hard">어려움</span></div><div class="question-text">부서별 급여 순위를 매기려면?</div><div class="options"><div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">①</div><div>RANK() OVER (PARTITION BY DEPT ORDER BY SALARY DESC)</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">②</div><div>RANK() OVER (GROUP BY DEPT)</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>GROUP BY DEPT ORDER BY SALARY</div></div><div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>PARTITION DEPT</div></div></div><div class="explanation"><h4>💡 해설</h4><p>PARTITION BY + ORDER BY!</p></div></div>
+</div></div>
+</div>
+
+<script>
+let webtoonCompleted=false,quizCorrect=0,flashcardsFlipped=new Set(),problemsSolved=0;
+window.addEventListener('scroll',()=>document.getElementById('scrollTopBtn').classList.toggle('show',window.pageYOffset>300));
+function scrollToTop(){window.scrollTo({top:0,behavior:'smooth'});}
+function scrollToSection(sectionId){showTab(sectionId);setTimeout(()=>window.scrollTo({top:document.getElementById(sectionId).getBoundingClientRect().top+window.pageYOffset-100,behavior:'smooth'}),100);}
+function showTab(tabName){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById(tabName).classList.add('active');event?.target?.classList.add('active');}
+function checkAnswer(element,isCorrect,section){const options=element.parentElement.querySelectorAll('.option');const explanation=element.parentElement.nextElementSibling;if(element.classList.contains('disabled'))return;options.forEach(opt=>opt.classList.add('disabled'));if(isCorrect){element.classList.add('correct');if(section==='quiz')quizCorrect++;if(section==='problems')problemsSolved++;}else{element.classList.add('incorrect');options.forEach(opt=>{if(opt.onclick.toString().includes('true'))opt.classList.add('correct');});}explanation.classList.add('show');updateProgress();}
+function flipCard(card){card.classList.toggle('flipped');const idx=Array.from(card.parentElement.children).indexOf(card);if(card.classList.contains('flipped'))flashcardsFlipped.add(idx);updateProgress();}
+function markWebtoonDone(){if(!webtoonCompleted){webtoonCompleted=true;updateProgress();alert('🎉 전체 완료!');}}
+function updateProgress(){document.getElementById('webtoonDone').textContent=webtoonCompleted?1:0;document.getElementById('quizScore').textContent=quizCorrect;document.getElementById('flashcardsDone').textContent=flashcardsFlipped.size;document.getElementById('problemsDone').textContent=problemsSolved;const total=24;const completed=(webtoonCompleted?1:0)+quizCorrect+flashcardsFlipped.size+problemsSolved;const pct=Math.round((completed/total)*100);document.getElementById('progressBar').style.width=pct+'%';document.getElementById('progressBar').textContent=pct+'%';}
+</script>
+</body>
+</html>

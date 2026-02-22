@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQLD Chapter 11: JOIN</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding-top: 60px; padding-bottom: 20px; }
+.container { max-width: 1200px; margin: 0 auto; padding: 10px 20px; }
+.header { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; }
+.chapter-badge { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px 30px; border-radius: 20px; display: inline-block; font-weight: bold; margin-bottom: 15px; }
+.webtoon-panel { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+.comic-panel { background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%); border: 4px solid #667eea; border-radius: 20px; padding: 25px; margin-bottom: 25px; }
+.code-box { background: #2d2d2d; color: #f8f8f2; padding: 20px; border-radius: 10px; font-family: 'Courier New', monospace; margin: 15px 0; overflow-x: auto; font-size: 0.95em; line-height: 1.8; }
+.memory-box { background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%); border: 5px solid #ffc107; border-radius: 20px; padding: 30px; margin: 30px 0; }
+.memory-keyword { font-size: 3em; font-weight: bold; color: #ff6b6b; text-align: center; margin: 20px 0; }
+.exam-point { background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%); color: white; padding: 25px; border-radius: 15px; margin: 25px 0; }
+.exam-point ul { margin-left: 25px; line-height: 2; }
+.highlight { background: linear-gradient(transparent 60%, #ffd89b 60%); font-weight: bold; }
+.complete-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 40px; border-radius: 25px; font-size: 1.2em; cursor: pointer; width: 100%; font-weight: bold; margin-top: 20px; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header"><div class="chapter-badge">📚 Chapter 11</div><h1>JOIN</h1></div>
+<div class="webtoon-panel"><h2 style="color: #667eea; text-align: center; margin-bottom: 30px;">🎬 JOIN 완벽 정리!</h2>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; margin-bottom: 15px;">INNER JOIN - 교집합</h3>
+<div class="code-box">-- 표준 SQL 방식
+SELECT * 
+FROM A 
+JOIN B ON A.ID = B.ID;
+
+-- Oracle 전통 방식
+SELECT * 
+FROM A, B 
+WHERE A.ID = B.ID;</div>
+</div>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; margin-bottom: 15px;">LEFT JOIN - 왼쪽 전체</h3>
+<div class="code-box">-- 왼쪽 테이블 모두 + 오른쪽 매칭
+SELECT * 
+FROM A 
+LEFT JOIN B ON A.ID = B.ID;
+
+-- 매칭 안되면 NULL</div>
+</div>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; margin-bottom: 15px;">RIGHT JOIN - 오른쪽 전체</h3>
+<div class="code-box">-- 오른쪽 테이블 모두 + 왼쪽 매칭
+SELECT * 
+FROM A 
+RIGHT JOIN B ON A.ID = B.ID;</div>
+</div>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; margin-bottom: 15px;">FULL OUTER JOIN - 양쪽 전체</h3>
+<div class="code-box">-- 양쪽 테이블 모두 포함
+SELECT * 
+FROM A 
+FULL OUTER JOIN B ON A.ID = B.ID;</div>
+</div>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; margin-bottom: 15px;">CROSS JOIN - 카티션 곱</h3>
+<div class="code-box">-- 모든 조합 (조건 없음)
+SELECT * 
+FROM A 
+CROSS JOIN B;
+
+-- 결과: A행 수 × B행 수</div>
+</div>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; margin-bottom: 15px;">SELF JOIN - 자기 자신과 JOIN</h3>
+<div class="code-box">-- 직원-상사 관계 조회
+SELECT 
+    E.NAME AS 직원,
+    M.NAME AS 상사
+FROM EMP E
+JOIN EMP M ON E.MANAGER_ID = M.ID;</div>
+</div>
+
+<div class="memory-box">
+<h3 style="color: #856404; text-align: center; margin-bottom: 20px;">🎯 JOIN 암기법!</h3>
+<div class="memory-keyword">내외카셀</div>
+<p style="text-align: center; font-size: 1.4em; font-weight: bold; color: #495057;">INNER / OUTER / CROSS / SELF</p>
+</div>
+
+<div class="exam-point">
+<h3 style="font-size: 1.6em; margin-bottom: 15px;">🎯 시험 필수!</h3>
+<ul>
+<li><strong>내외카셀</strong> 암기!</li>
+<li>INNER = 교집합</li>
+<li>LEFT = 왼쪽 전체</li>
+<li>RIGHT = 오른쪽 전체</li>
+<li>FULL OUTER = 양쪽 전체</li>
+<li>CROSS = 모든 조합</li>
+<li>SELF = 자기 자신과</li>
+</ul>
+</div>
+
+<button onclick="alert('✅ 완료!')" class="complete-btn">✅ 완료!</button>
+</div>
+</div>
+</body>
+</html>

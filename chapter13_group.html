@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQLD Chapter 13: 그룹 함수</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding-top: 60px; padding-bottom: 20px; }
+.container { max-width: 1200px; margin: 0 auto; padding: 10px 20px; }
+.header { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; }
+.chapter-badge { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px 30px; border-radius: 20px; display: inline-block; font-weight: bold; margin-bottom: 15px; }
+.webtoon-panel { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+.comic-panel { background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%); border: 4px solid #667eea; border-radius: 20px; padding: 25px; margin-bottom: 25px; }
+.code-box { background: #2d2d2d; color: #f8f8f2; padding: 20px; border-radius: 10px; font-family: 'Courier New', monospace; margin: 15px 0; overflow-x: auto; font-size: 0.95em; line-height: 1.8; }
+.memory-box { background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%); border: 5px solid #ffc107; border-radius: 20px; padding: 30px; margin: 30px 0; }
+.memory-keyword { font-size: 3em; font-weight: bold; color: #ff6b6b; text-align: center; margin: 20px 0; }
+.exam-point { background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%); color: white; padding: 25px; border-radius: 15px; margin: 25px 0; }
+.exam-point ul { margin-left: 25px; line-height: 2; }
+.complete-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 40px; border-radius: 25px; font-size: 1.2em; cursor: pointer; width: 100%; font-weight: bold; margin-top: 20px; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header"><div class="chapter-badge">📚 Chapter 13</div><h1>그룹 함수</h1></div>
+<div class="webtoon-panel"><h2 style="color: #667eea; text-align: center; margin-bottom: 30px;">🎬 그룹 함수 완벽 정리!</h2>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; margin-bottom: 15px;">주요 그룹 함수</h3>
+<div class="code-box">-- 부서별 평균 급여
+SELECT 
+    DEPT, 
+    AVG(SALARY)
+FROM EMP
+GROUP BY DEPT;
+
+-- 여러 집계 함수 동시 사용
+SELECT 
+    DEPT,
+    COUNT(*) AS 인원,
+    SUM(SALARY) AS 합계,
+    AVG(SALARY) AS 평균,
+    MAX(SALARY) AS 최대,
+    MIN(SALARY) AS 최소
+FROM EMP
+GROUP BY DEPT;</div>
+</div>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; margin-bottom: 15px;">HAVING - 그룹 조건</h3>
+<div class="code-box">-- 평균 급여가 3000 이상인 부서만
+SELECT 
+    DEPT, 
+    AVG(SALARY)
+FROM EMP
+GROUP BY DEPT
+HAVING AVG(SALARY) >= 3000;
+
+-- WHERE vs HAVING
+-- WHERE: 그룹화 전 (개별 행 필터)
+-- HAVING: 그룹화 후 (그룹 필터)</div>
+</div>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; margin-bottom: 15px;">실행 순서 (중요!)</h3>
+<div class="code-box">-- 실행 순서
+-- 1. FROM
+-- 2. WHERE
+-- 3. GROUP BY
+-- 4. HAVING
+-- 5. SELECT
+-- 6. ORDER BY
+
+SELECT DEPT, AVG(SALARY)
+FROM EMP
+WHERE SALARY > 2000
+GROUP BY DEPT
+HAVING AVG(SALARY) >= 3000
+ORDER BY AVG(SALARY) DESC;</div>
+</div>
+
+<div class="comic-panel">
+<h3 style="color: #667eea; margin-bottom: 15px;">COUNT 주의사항</h3>
+<div class="code-box">-- COUNT(*): NULL 포함
+SELECT COUNT(*) FROM EMP;
+
+-- COUNT(컬럼): NULL 제외
+SELECT COUNT(BONUS) FROM EMP;
+
+-- DISTINCT와 함께 사용
+SELECT COUNT(DISTINCT DEPT) FROM EMP;</div>
+</div>
+
+<div class="memory-box">
+<h3 style="color: #856404; text-align: center; margin-bottom: 20px;">🎯 그룹 함수 암기법!</h3>
+<div class="memory-keyword">카섬에맥민</div>
+<p style="text-align: center; font-size: 1.4em; font-weight: bold; color: #495057;">COUNT / SUM / AVG / MAX / MIN</p>
+</div>
+
+<div class="exam-point">
+<h3 style="font-size: 1.6em; margin-bottom: 15px;">🎯 시험 필수!</h3>
+<ul>
+<li><strong>카섬에맥민</strong> 암기!</li>
+<li>GROUP BY = 그룹화</li>
+<li>HAVING = 그룹 조건</li>
+<li>WHERE = 개별 행 조건</li>
+<li>COUNT(*) = NULL 포함</li>
+<li>COUNT(컬럼) = NULL 제외</li>
+<li>실행순서: FROM→WHERE→GROUP→HAVING→SELECT→ORDER</li>
+</ul>
+</div>
+
+<button onclick="alert('✅ 완료!')" class="complete-btn">✅ 완료!</button>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQLD Chapter 4: 관계</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding-top: 60px; padding-bottom: 20px; }
+        .fixed-nav { position: fixed; top: 0; left: 0; right: 0; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000; padding: 10px 15px; }
+        .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+        .nav-title { font-size: 1.1em; font-weight: bold; color: #667eea; }
+        .nav-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .nav-btn { padding: 6px 12px; background: #f8f9fa; border: 2px solid #667eea; border-radius: 20px; cursor: pointer; font-size: 0.85em; font-weight: bold; color: #667eea; transition: all 0.3s; }
+        .nav-btn:hover, .nav-btn.active { background: #667eea; color: white; }
+        .scroll-to-top { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 5px 20px rgba(0,0,0,0.3); z-index: 999; opacity: 0; transition: opacity 0.3s; font-size: 2em; color: white; }
+        .scroll-to-top.show { opacity: 1; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 10px 20px; }
+        .header { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; }
+        .header h1 { color: #667eea; font-size: 2em; margin-bottom: 10px; }
+        .chapter-badge { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px 30px; border-radius: 20px; display: inline-block; font-weight: bold; margin-bottom: 15px; }
+        .progress-section { background: white; border-radius: 20px; padding: 25px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .progress-bar { height: 35px; background: #e0e0e0; border-radius: 20px; overflow: hidden; margin: 20px 0; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); transition: width 0.5s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.1em; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-top: 20px; }
+        .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 15px; text-align: center; }
+        .stat-number { font-size: 2.2em; font-weight: bold; margin: 10px 0; }
+        .tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; background: white; padding: 15px; border-radius: 15px; margin-bottom: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .tab { padding: 15px 20px; background: #f8f9fa; border: none; border-radius: 10px; cursor: pointer; font-size: 1em; font-weight: bold; transition: all 0.3s; color: #666; text-align: center; }
+        .tab:hover { background: #e9ecef; }
+        .tab.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .webtoon-panel { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .webtoon-title { font-size: 2em; color: #667eea; margin-bottom: 30px; text-align: center; font-weight: bold; }
+        .comic-panel { background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%); border: 4px solid #667eea; border-radius: 20px; padding: 25px; margin-bottom: 25px; }
+        .comic-content { display: flex; flex-direction: column; gap: 20px; }
+        .character-avatar { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 3.5em; box-shadow: 0 5px 15px rgba(0,0,0,0.2); margin: 0 auto; }
+        .avatar-student { background: linear-gradient(135deg, #ffd89b 0%, #ff9a9e 100%); }
+        .avatar-teacher { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+        .character-text { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .character-name { font-weight: bold; color: #667eea; margin-bottom: 10px; font-size: 1.1em; }
+        .character-speech { font-size: 1.1em; line-height: 1.8; color: #333; }
+        .memory-box { background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%); border: 5px solid #ffc107; border-radius: 20px; padding: 30px; margin: 30px 0; box-shadow: 0 10px 25px rgba(255, 193, 7, 0.3); }
+        .memory-box h3 { color: #856404; font-size: 1.8em; margin-bottom: 20px; text-align: center; }
+        .memory-keyword { font-size: 3.5em; font-weight: bold; color: #ff6b6b; text-align: center; margin: 20px 0; text-shadow: 3px 3px 6px rgba(0,0,0,0.1); letter-spacing: 8px; }
+        .memory-story { font-size: 1.6em; text-align: center; color: #495057; font-weight: bold; margin: 20px 0; line-height: 1.6; }
+        .memory-breakdown { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 25px; }
+        .memory-item { background: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .memory-item-char { font-size: 2.5em; font-weight: bold; color: #667eea; margin-bottom: 10px; }
+        .memory-item-text { font-size: 1em; color: #495057; font-weight: bold; line-height: 1.4; }
+        .highlight { background: linear-gradient(transparent 60%, #ffd89b 60%); font-weight: bold; padding: 2px 6px; }
+        .exam-point { background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%); color: white; padding: 25px; border-radius: 15px; margin: 25px 0; box-shadow: 0 10px 25px rgba(255, 107, 107, 0.3); }
+        .exam-point h3 { font-size: 1.6em; margin-bottom: 15px; }
+        .exam-point ul { margin-left: 25px; line-height: 2; }
+        .exam-point li { margin: 10px 0; font-size: 1.1em; }
+        .key-point { background: #e7f3ff; border-left: 6px solid #2196F3; padding: 25px; margin: 25px 0; border-radius: 10px; }
+        .key-point h3 { color: #1976D2; margin-bottom: 15px; font-size: 1.5em; }
+        .key-point ul { margin-left: 25px; line-height: 2; }
+        .key-point li { margin: 10px 0; font-size: 1.05em; }
+        .quiz-container { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .question-card { background: #f8f9fa; border-radius: 20px; padding: 25px; margin-bottom: 25px; }
+        .question-number { color: #667eea; font-weight: bold; font-size: 1.2em; margin-bottom: 15px; }
+        .question-text { font-size: 1.25em; color: #333; margin-bottom: 20px; line-height: 1.8; }
+        .options { display: grid; gap: 12px; }
+        .option { background: white; border: 3px solid #e0e0e0; border-radius: 15px; padding: 15px 20px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 15px; font-size: 1.05em; }
+        .option:hover { border-color: #667eea; transform: translateX(5px); }
+        .option-label { width: 35px; height: 35px; border-radius: 50%; background: #667eea; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
+        .option.correct { border-color: #28a745; background: #d4edda; }
+        .option.correct .option-label { background: #28a745; }
+        .option.incorrect { border-color: #dc3545; background: #f8d7da; }
+        .option.incorrect .option-label { background: #dc3545; }
+        .option.disabled { cursor: not-allowed; opacity: 0.7; }
+        .explanation { background: #e7f3ff; border-left: 6px solid #2196F3; padding: 20px; margin-top: 20px; border-radius: 10px; display: none; line-height: 1.8; }
+        .explanation.show { display: block; }
+        .explanation h4 { color: #1976D2; margin-bottom: 15px; font-size: 1.3em; }
+        .flashcard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-top: 30px; }
+        .flashcard { height: 280px; perspective: 1000px; cursor: pointer; }
+        .flashcard-inner { position: relative; width: 100%; height: 100%; transition: transform 0.8s; transform-style: preserve-3d; }
+        .flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
+        .flashcard-front, .flashcard-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 20px; padding: 30px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .flashcard-front { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .flashcard-front h3 { font-size: 1.8em; margin-bottom: 15px; }
+        .flashcard-back { background: white; transform: rotateY(180deg); }
+        .flashcard-back h3 { color: #667eea; margin-bottom: 15px; font-size: 1.4em; }
+        .problem-bank { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .difficulty-badge { display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 0.9em; font-weight: bold; }
+        .difficulty-easy { background: #d4edda; color: #155724; }
+        .difficulty-medium { background: #fff3cd; color: #856404; }
+        .difficulty-hard { background: #f8d7da; color: #721c24; }
+        .complete-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 40px; border-radius: 25px; font-size: 1.2em; cursor: pointer; margin-top: 20px; width: 100%; font-weight: bold; }
+        @media (max-width: 768px) { body { padding-top: 100px; } .memory-keyword { font-size: 2.5em; letter-spacing: 5px; } .flashcard-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="fixed-nav">
+        <div class="nav-container">
+            <div class="nav-title">📚 Chapter 4: 관계</div>
+            <div class="nav-buttons">
+                <button class="nav-btn" onclick="scrollToSection('webtoon')">🎬 웹툰</button>
+                <button class="nav-btn" onclick="scrollToSection('quiz')">🎯 퀴즈</button>
+                <button class="nav-btn" onclick="scrollToSection('flashcard')">🃏 암기카드</button>
+                <button class="nav-btn" onclick="scrollToSection('problems')">📝 문제</button>
+            </div>
+        </div>
+    </div>
+    <div class="scroll-to-top" id="scrollTopBtn" onclick="scrollToTop()">↑</div>
+    <div class="container">
+        <div class="header">
+            <div class="chapter-badge">📚 Chapter 4</div>
+            <h1>관계 (Relationship)</h1>
+            <p style="color: #666; margin-top: 10px; font-size: 1.1em;">엔터티를 연결하는 고리! 관계 완벽 정복!</p>
+        </div>
+        <div class="progress-section">
+            <h2 style="color: #667eea; margin-bottom: 15px;">📊 학습 진행도</h2>
+            <div class="progress-bar"><div class="progress-fill" id="progressBar" style="width: 0%;">0%</div></div>
+            <div class="stats-grid">
+                <div class="stat-card"><div style="font-size: 0.9em;">웹툰</div><div class="stat-number" id="webtoonDone">0</div><div style="font-size: 0.9em;">/ 1</div></div>
+                <div class="stat-card"><div style="font-size: 0.9em;">퀴즈</div><div class="stat-number" id="quizScore">0</div><div style="font-size: 0.9em;">/ 7</div></div>
+                <div class="stat-card"><div style="font-size: 0.9em;">암기카드</div><div class="stat-number" id="flashcardsDone">0</div><div style="font-size: 0.9em;">/ 8</div></div>
+                <div class="stat-card"><div style="font-size: 0.9em;">문제</div><div class="stat-number" id="problemsDone">0</div><div style="font-size: 0.9em;">/ 8</div></div>
+            </div>
+        </div>
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('webtoon')">🎬 웹툰</button>
+            <button class="tab" onclick="showTab('quiz')">🎯 퀴즈</button>
+            <button class="tab" onclick="showTab('flashcard')">🃏 암기카드</button>
+            <button class="tab" onclick="showTab('problems')">📝 문제</button>
+        </div>
+
+        <!-- 웹툰 -->
+        <div id="webtoon" class="section active">
+            <div class="webtoon-panel">
+                <div class="webtoon-title">🎬 관계의 모든 것!</div>
+
+                <div class="comic-panel">
+                    <div class="comic-content">
+                        <div class="character-avatar avatar-student">🧑‍💻</div>
+                        <div class="character-text">
+                            <div class="character-name">수험생</div>
+                            <div class="character-speech">관계가 뭔가요? 엔터티끼리 연결된다는 건가요?</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="comic-panel">
+                    <div class="comic-content">
+                        <div class="character-avatar avatar-teacher">👨‍🏫</div>
+                        <div class="character-text">
+                            <div class="character-name">SQLD 전문가</div>
+                            <div class="character-speech">
+                                관계는 <span class="highlight">엔터티의 인스턴스 사이의 논리적인 연관성으로서 존재의 형태로서나 행위로서 서로에게 연관성이 부여된 상태</span>예요!<br><br>
+                                예) [강사] - 가르친다 - [수강생]<br><br>
+                                <strong>페어링(Pairing):</strong><br>
+                                엔터티 안에 인스턴스가 개별적으로 관계를 가지는 것<br>
+                                관계 = 페어링의 집합을 논리적으로 표현한 것
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="comic-panel">
+                    <div class="comic-content">
+                        <div class="character-avatar avatar-student">🧑‍💻</div>
+                        <div class="character-text">
+                            <div class="character-name">수험생</div>
+                            <div class="character-speech">관계에도 종류가 있나요?</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="comic-panel">
+                    <div class="comic-content">
+                        <div class="character-avatar avatar-teacher">👨‍🏫</div>
+                        <div class="character-text">
+                            <div class="character-name">SQLD 전문가</div>
+                            <div class="character-speech">
+                                네! 목적에 따라 <strong>2가지로 분류</strong>돼요!<br><br>
+                                <strong>1️⃣ 존재에 의한 관계</strong><br>
+                                하나의 엔터티가 다른 엔터티에 항상 속해 있는 관계<br>
+                                각 엔터티는 독립적으로 존재 가능<br>
+                                예) 부서 - 소속한다 - 사원<br><br>
+                                <strong>2️⃣ 행위에 의한 관계</strong><br>
+                                혼자서는 존재할 수 없는 엔터티(사건 엔터티)<br>
+                                예) 고객 - 주문한다 - 주문
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="comic-panel">
+                    <div class="comic-content">
+                        <div class="character-avatar avatar-student">🧑‍💻</div>
+                        <div class="character-text">
+                            <div class="character-name">수험생</div>
+                            <div class="character-speech">관계의 표기법은 어떻게 되나요?</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="comic-panel">
+                    <div class="comic-content">
+                        <div class="character-avatar avatar-teacher">👨‍🏫</div>
+                        <div class="character-text">
+                            <div class="character-name">SQLD 전문가</div>
+                            <div class="character-speech">
+                                관계 표기법에는 <strong>3가지 요소</strong>가 있어요!<br><br>
+                                <strong>1️⃣ 관계명 (Membership)</strong><br>
+                                관계의 이름<br>
+                                명명 규칙: 애매한 동사 피하기, 현재형으로 표현<br><br>
+                                <strong>2️⃣ 관계 차수 (Degree)</strong><br>
+                                각 관계에 참여할 수 있는 인스턴스의 수<br>
+                                • 1:1 (일대일)<br>
+                                • 1:N (일대다) ← 가장 흔함!<br>
+                                • M:N (다대다) ← 물리 모델에서 분해 필요!<br><br>
+                                <strong>3️⃣ 관계 선택성 (선택사양)</strong><br>
+                                • 필수참여관계 (표기: |) → 반드시 참여<br>
+                                • 선택참여관계 (표기: ○) → 참여 안 해도 됨
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="comic-panel">
+                    <div class="comic-content">
+                        <div class="character-avatar avatar-teacher">👨‍🏫</div>
+                        <div class="character-text">
+                            <div class="character-name">SQLD 전문가</div>
+                            <div class="character-speech">
+                                <strong>관계 체크사항 (4가지)</strong><br><br>
+                                ✅ 2개의 엔터티 사이에 관심있는 연관 규칙이 존재하는가?<br>
+                                ✅ 2개의 엔터티 사이에 정보의 조합이 발생하는가?<br>
+                                ✅ 업무기술서, 장표에 관계연결에 대한 규칙이 서술되어 있는가?<br>
+                                ✅ 업무기술서, 장표에 관계연결을 가능하게 하는 <strong>동사</strong>가 있는가?
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="memory-box">
+                    <h3>🎯 관계 암기법!</h3>
+                    <div class="memory-keyword">존행명차선</div>
+                    <div class="memory-story">🔗 "존경하는 행님의 명차는 선물!"</div>
+                    <div class="memory-breakdown">
+                        <div class="memory-item"><div class="memory-item-char">존</div><div class="memory-item-text">존재 관계<br>소속</div></div>
+                        <div class="memory-item"><div class="memory-item-char">행</div><div class="memory-item-text">행위 관계<br>사건</div></div>
+                        <div class="memory-item"><div class="memory-item-char">명</div><div class="memory-item-text">관계명<br>현재형</div></div>
+                        <div class="memory-item"><div class="memory-item-char">차</div><div class="memory-item-text">관계 차수<br>1:1, 1:N, M:N</div></div>
+                        <div class="memory-item"><div class="memory-item-char">선</div><div class="memory-item-text">선택성<br>필수|선택○</div></div>
+                    </div>
+                </div>
+
+                <div class="exam-point">
+                    <h3>🎯 시험 필수 암기!</h3>
+                    <ul>
+                        <li><strong>존행명차선</strong> 암기!</li>
+                        <li>존재관계: 부서-사원 (소속)</li>
+                        <li>행위관계: 고객-주문 (사건)</li>
+                        <li>1:N = 가장 흔한 관계</li>
+                        <li>M:N = 물리 모델에서 반드시 분해!</li>
+                        <li>필수참여(|) vs 선택참여(○)</li>
+                        <li>관계명 = 현재형 동사</li>
+                    </ul>
+                </div>
+
+                <div class="key-point">
+                    <h3>📚 핵심 정리</h3>
+                    <ul>
+                        <li>관계 = 엔터티 인스턴스 간 논리적 연관성</li>
+                        <li>존재관계 vs 행위관계</li>
+                        <li>관계 표기 = 관계명 + 차수 + 선택성</li>
+                        <li>M:N = 물리에서 분해</li>
+                    </ul>
+                </div>
+                <button onclick="markWebtoonDone()" class="complete-btn">✅ 웹툰 완료!</button>
+            </div>
+        </div>
+
+        <!-- 퀴즈 -->
+        <div id="quiz" class="section">
+            <div class="quiz-container">
+                <h2 style="color: #667eea; text-align: center; font-size: 2em; margin-bottom: 30px;">🎯 퀴즈</h2>
+
+                <div class="question-card">
+                    <div class="question-number">Question 1</div>
+                    <div class="question-text">관계의 정의로 올바른 것은?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">①</div><div>엔터티 인스턴스 사이의 논리적인 연관성</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">②</div><div>속성과 속성의 연결</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">③</div><div>테이블과 테이블의 물리적 연결</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>데이터베이스 간 연결</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>관계 = 엔터티 인스턴스 사이의 논리적 연관성!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div class="question-number">Question 2</div>
+                    <div class="question-text">부서-사원처럼 소속 관계는?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">①</div><div>존재에 의한 관계</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">②</div><div>행위에 의한 관계</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">③</div><div>M:N 관계</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>선택 관계</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>존재관계 = 소속! 행위관계 = 사건!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div class="question-number">Question 3</div>
+                    <div class="question-text">고객-주문처럼 사건에 의해 발생하는 관계는?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">①</div><div>존재 관계</div></div>
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">②</div><div>행위 관계</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">③</div><div>필수 관계</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>1:1 관계</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>행위관계 = 업무 중 발생!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div class="question-number">Question 4</div>
+                    <div class="question-text">물리 데이터 모델에서 반드시 분해해야 하는 관계는?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">①</div><div>1:1</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">②</div><div>1:N</div></div>
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">③</div><div>M:N</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>선택 관계</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>M:N = 물리에서 분해 필수!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div class="question-number">Question 5</div>
+                    <div class="question-text">필수참여관계의 표기는?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">①</div><div>○</div></div>
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">②</div><div>|</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">③</div><div>□</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>△</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>필수참여 = | / 선택참여 = ○</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div class="question-number">Question 6</div>
+                    <div class="question-text">관계 체크사항이 아닌 것은?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">①</div><div>연관 규칙 존재 여부</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">②</div><div>정보 조합 발생 여부</div></div>
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">③</div><div>속성 수 확인</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>동사 존재 여부</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>관계 체크 = 연관규칙, 정보조합, 동사 여부!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div class="question-number">Question 7</div>
+                    <div class="question-text">관계명 명명 규칙으로 올바른 것은?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">①</div><div>과거형으로 표현</div></div>
+                        <div class="option" onclick="checkAnswer(this, true, 'quiz')"><div class="option-label">②</div><div>현재형으로 표현</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">③</div><div>명사로 표현</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'quiz')"><div class="option-label">④</div><div>약어 사용</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>관계명 = 현재형 동사!</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 암기카드 -->
+        <div id="flashcard" class="section">
+            <div class="webtoon-panel">
+                <h2 style="color: #667eea; margin-bottom: 20px; font-size: 2em; text-align: center;">🃏 암기 카드</h2>
+                <div class="flashcard-grid">
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front"><h3>관계</h3><p>Relationship</p></div>
+                            <div class="flashcard-back"><h3>정의</h3><p>엔터티 인스턴스 간<br>논리적 연관성</p></div>
+                        </div>
+                    </div>
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front"><h3>존재 관계</h3></div>
+                            <div class="flashcard-back"><h3>정의</h3><p>소속 관계<br>예) 부서-사원</p></div>
+                        </div>
+                    </div>
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front"><h3>행위 관계</h3></div>
+                            <div class="flashcard-back"><h3>정의</h3><p>사건으로 발생<br>예) 고객-주문</p></div>
+                        </div>
+                    </div>
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front"><h3>1:N 관계</h3></div>
+                            <div class="flashcard-back"><h3>정의</h3><p>일대다 관계<br>가장 흔함!</p></div>
+                        </div>
+                    </div>
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front"><h3>M:N 관계</h3></div>
+                            <div class="flashcard-back"><h3>정의</h3><p>다대다<br>물리에서 분해!</p></div>
+                        </div>
+                    </div>
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front"><h3>필수참여</h3><p>|</p></div>
+                            <div class="flashcard-back"><h3>정의</h3><p>반드시 참여<br>표기: |</p></div>
+                        </div>
+                    </div>
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front"><h3>선택참여</h3><p>○</p></div>
+                            <div class="flashcard-back"><h3>정의</h3><p>참여 안해도 됨<br>표기: ○</p></div>
+                        </div>
+                    </div>
+                    <div class="flashcard" onclick="flipCard(this)">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front"><h3>페어링</h3><p>Pairing</p></div>
+                            <div class="flashcard-back"><h3>정의</h3><p>인스턴스가 개별적으로<br>관계를 가지는 것</p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 문제 은행 -->
+        <div id="problems" class="section">
+            <div class="problem-bank">
+                <h2 style="color: #667eea; margin-bottom: 20px; font-size: 2em;">📝 실전 문제</h2>
+
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <div class="question-number">실전 1</div>
+                        <span class="difficulty-badge difficulty-easy">쉬움</span>
+                    </div>
+                    <div class="question-text">다음 중 존재에 의한 관계는?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">①</div><div>부서 - 사원</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">②</div><div>고객 - 주문</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>학생 - 수강신청</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>계좌 - 입금</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>부서-사원 = 소속 = 존재관계!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <div class="question-number">실전 2</div>
+                        <span class="difficulty-badge difficulty-easy">쉬움</span>
+                    </div>
+                    <div class="question-text">M:N 관계에 대한 설명으로 옳은 것은?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">①</div><div>논리/물리 모두 그대로 사용</div></div>
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">②</div><div>물리 모델에서 분해 필요</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>가장 흔한 관계</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>존재 관계만 해당</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>M:N은 물리 모델에서 분해!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <div class="question-number">실전 3</div>
+                        <span class="difficulty-badge difficulty-medium">보통</span>
+                    </div>
+                    <div class="question-text">관계 표기 요소가 아닌 것은?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">①</div><div>관계명</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">②</div><div>관계 차수</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>관계 선택성</div></div>
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">④</div><div>관계 속성 수</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>관계 표기 = 관계명 + 차수 + 선택성!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <div class="question-number">실전 4</div>
+                        <span class="difficulty-badge difficulty-medium">보통</span>
+                    </div>
+                    <div class="question-text">관계가 성립하려면 업무기술서에 무엇이 있어야 하는가?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">①</div><div>명사</div></div>
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">②</div><div>동사</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>형용사</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>부사</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>관계 확인 = 동사 존재 여부!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <div class="question-number">실전 5</div>
+                        <span class="difficulty-badge difficulty-medium">보통</span>
+                    </div>
+                    <div class="question-text">선택참여관계는 어떤 상황인가?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">①</div><div>반드시 참여해야 함</div></div>
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">②</div><div>참여하지 않아도 됨</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>M:N만 해당</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>존재관계만 해당</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>선택참여 ○ = 참여 안해도 됨!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <div class="question-number">실전 6</div>
+                        <span class="difficulty-badge difficulty-hard">어려움</span>
+                    </div>
+                    <div class="question-text">페어링에 대한 설명으로 옳은 것은?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">①</div><div>인스턴스가 개별적으로 관계를 가지는 것</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">②</div><div>엔터티 간 물리적 연결</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">③</div><div>속성끼리의 연결</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>관계의 집합</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>페어링 = 인스턴스 개별 관계! 관계 = 페어링의 집합!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <div class="question-number">실전 7</div>
+                        <span class="difficulty-badge difficulty-medium">보통</span>
+                    </div>
+                    <div class="question-text">다음 관계 중 행위에 의한 관계는?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">①</div><div>부서-직원</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">②</div><div>학교-학생</div></div>
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">③</div><div>고객-주문</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>회사-직원</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>고객-주문 = 주문이라는 행위로 발생!</p></div>
+                </div>
+
+                <div class="question-card">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <div class="question-number">실전 8</div>
+                        <span class="difficulty-badge difficulty-hard">어려움</span>
+                    </div>
+                    <div class="question-text">관계명을 잘못 표현한 것은?</div>
+                    <div class="options">
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">①</div><div>포함한다</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">②</div><div>소속된다</div></div>
+                        <div class="option" onclick="checkAnswer(this, true, 'problems')"><div class="option-label">③</div><div>포함했다</div></div>
+                        <div class="option" onclick="checkAnswer(this, false, 'problems')"><div class="option-label">④</div><div>가르친다</div></div>
+                    </div>
+                    <div class="explanation"><h4>💡 해설</h4><p>관계명 = 현재형! 과거형 금지!</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let webtoonCompleted = false;
+        let quizCorrect = 0;
+        let flashcardsFlipped = new Set();
+        let problemsSolved = 0;
+
+        window.addEventListener('scroll', function() {
+            document.getElementById('scrollTopBtn').classList.toggle('show', window.pageYOffset > 300);
+        });
+
+        function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+        function scrollToSection(sectionId) {
+            showTab(sectionId);
+            setTimeout(() => {
+                const el = document.getElementById(sectionId);
+                const offset = el.getBoundingClientRect().top + window.pageYOffset - 100;
+                window.scrollTo({ top: offset, behavior: 'smooth' });
+            }, 100);
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event?.target?.classList.add('active');
+        }
+
+        function checkAnswer(element, isCorrect, section) {
+            const options = element.parentElement.querySelectorAll('.option');
+            const explanation = element.parentElement.nextElementSibling;
+            if (element.classList.contains('disabled')) return;
+            options.forEach(opt => opt.classList.add('disabled'));
+            if (isCorrect) {
+                element.classList.add('correct');
+                if (section === 'quiz') quizCorrect++;
+                if (section === 'problems') problemsSolved++;
+            } else {
+                element.classList.add('incorrect');
+                options.forEach(opt => { if (opt.onclick.toString().includes('true')) opt.classList.add('correct'); });
+            }
+            explanation.classList.add('show');
+            updateProgress();
+        }
+
+        function flipCard(card) {
+            card.classList.toggle('flipped');
+            const idx = Array.from(card.parentElement.children).indexOf(card);
+            if (card.classList.contains('flipped')) flashcardsFlipped.add(idx);
+            updateProgress();
+        }
+
+        function markWebtoonDone() {
+            if (!webtoonCompleted) { webtoonCompleted = true; updateProgress(); alert('🎉 완료!'); }
+        }
+
+        function updateProgress() {
+            document.getElementById('webtoonDone').textContent = webtoonCompleted ? 1 : 0;
+            document.getElementById('quizScore').textContent = quizCorrect;
+            document.getElementById('flashcardsDone').textContent = flashcardsFlipped.size;
+            document.getElementById('problemsDone').textContent = problemsSolved;
+            const total = 1 + 7 + 8 + 8;
+            const completed = (webtoonCompleted ? 1 : 0) + quizCorrect + flashcardsFlipped.size + problemsSolved;
+            const pct = Math.round((completed / total) * 100);
+            document.getElementById('progressBar').style.width = pct + '%';
+            document.getElementById('progressBar').textContent = pct + '%';
+        }
+    </script>
+</body>
+</html>
